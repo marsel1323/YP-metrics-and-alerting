@@ -95,9 +95,6 @@ func main() {
 				PollCount:     Counter(pollCount),
 				RandomValue:   Gauge(rand.Intn(10000)),
 			}
-
-			b, _ := json.Marshal(metrics)
-			fmt.Println(string(b))
 		}
 	}(pollInterval)
 
@@ -137,9 +134,16 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				request.Body.Close()
+				err = request.Body.Close()
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 		}
 	}(serverAddress, reportInterval)
+
+	for {
+		time.Sleep(time.Second)
+	}
 }
