@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"YP-metrics-and-alerting/internal/models"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,12 +32,18 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.RequestURI()
 
 	splitURI := strings.Split(q, "/")
+	if len(splitURI) < 5 {
+		http.Error(w, "URL Not Found", http.StatusNotFound)
+		return
+	}
+
 	metricType, metricName, metricValue := splitURI[2], splitURI[3], splitURI[4]
 
 	if metricType == "gauge" {
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, "Invalid Value", http.StatusBadRequest)
+			return
 		}
 		gaugeStorage[metricName] = &GaugeMetric{
 			Value: value,
@@ -46,13 +51,14 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else if metricType == "counter" {
 		value, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, "Invalid Value", http.StatusBadRequest)
+			return
 		}
 		counterStorage[metricName] = &CounterMetric{
 			Value: value,
 		}
 	} else {
-		http.Error(w, "Unknown metric", http.StatusBadRequest)
+		http.Error(w, "Unknown metric", http.StatusNotImplemented)
 		return
 	}
 

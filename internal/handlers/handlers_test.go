@@ -75,11 +75,19 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
+			name:   "positive test #2",
+			target: "/update/gauge/testGauge/100",
+			method: http.MethodPost,
+			want: want{
+				code: 200,
+			},
+		},
+		{
 			name:   "Invalid Metric Type",
 			target: "/update/gaugage/Alloc/123.000000",
 			method: http.MethodPost,
 			want: want{
-				code: 400,
+				code: 501,
 			},
 		},
 		{
@@ -88,6 +96,46 @@ func TestUpdateHandler(t *testing.T) {
 			method: http.MethodGet,
 			want: want{
 				code: 405,
+			},
+		},
+		{
+			name:   "Without ID",
+			target: "/update/counter/",
+			method: http.MethodPost,
+			want: want{
+				code: 404,
+			},
+		},
+		{
+			name:   "Without ID",
+			target: "/update/gauge/",
+			method: http.MethodPost,
+			want: want{
+				code: 404,
+			},
+		},
+		{
+			name:   "Invalid Value",
+			target: "/update/counter/testCounter/none",
+			method: http.MethodPost,
+			want: want{
+				code: 400,
+			},
+		},
+		{
+			name:   "Invalid Value",
+			target: "/update/counter/testGauge/none",
+			method: http.MethodPost,
+			want: want{
+				code: 400,
+			},
+		},
+		{
+			name:   "Update Invalid Type",
+			target: "/update/unknown/testCounter/100",
+			method: http.MethodPost,
+			want: want{
+				code: 501,
 			},
 		},
 	}
