@@ -9,7 +9,7 @@ import (
 )
 
 func Routes(app *config.Application) *chi.Mux {
-	mux := chi.NewRouter()
+	mux := chi.NewMux()
 	mux.Use(middleware.Logger)
 
 	storage := repository.NewMapStorageRepo()
