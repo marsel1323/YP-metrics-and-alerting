@@ -54,6 +54,6 @@ func (m *mapStorageRepo) GetCounterMetricValue(metricName string) (int64, error)
 }
 
 func (m *mapStorageRepo) SetCounterMetricValue(metricName string, metricValue int64) error {
-	m.Counter[metricName] = metricValue
+	m.Counter[metricName] += metricValue
 	return nil
 }
