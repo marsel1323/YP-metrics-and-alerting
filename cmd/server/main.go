@@ -1,22 +1,28 @@
 package main
 
 import (
-	"YP-metrics-and-alerting/internal/handlers"
+	"YP-metrics-and-alerting/internal/config"
 	"fmt"
 	"log"
 	"net/http"
 )
 
 func main() {
-	host := "127.0.0.1"
-	port := 8080
-	serverAddress := fmt.Sprintf("%s:%d", host, port)
+	var cfg config.Config
 
-	http.HandleFunc("/status", handlers.StatusHandler)
-	http.HandleFunc("/update/", handlers.UpdateHandler)
+	cfg.Host = "127.0.0.1"
+	cfg.Port = 8080
+
+	serverAddress := fmt.Sprintf("%s:%d",
+		cfg.Host,
+		cfg.Port,
+	)
+
+	app := &config.Application{}
 
 	server := &http.Server{
-		Addr: serverAddress,
+		Addr:    serverAddress,
+		Handler: Routes(app),
 	}
 
 	log.Println("Server is serving on", server.Addr)
