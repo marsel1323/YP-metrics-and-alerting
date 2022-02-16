@@ -82,7 +82,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		w.Write([]byte(fmt.Sprintf("%f", value)))
+		w.Write([]byte(fmt.Sprintf("%.3f", value)))
 		return
 	} else if metricType == CounterType {
 		value, err := repo.DB.GetCounterMetricValue(metricName)

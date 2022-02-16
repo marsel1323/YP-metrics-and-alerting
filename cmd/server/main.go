@@ -18,7 +18,9 @@ func main() {
 		cfg.Port,
 	)
 
-	app := &config.Application{}
+	app := &config.Application{
+		Config: cfg,
+	}
 
 	server := &http.Server{
 		Addr:    serverAddress,
