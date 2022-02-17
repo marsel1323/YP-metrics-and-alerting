@@ -7,11 +7,17 @@ import (
 	"math/rand"
 	"net/http"
 	"runtime"
+	"sync"
 	"time"
 )
 
 type Gauge float64
 type Counter int64
+
+const (
+	GaugeMetricType   = "gauge"
+	CounterMetricType = "counter"
+)
 
 const (
 	Alloc         = "Alloc"
@@ -44,15 +50,19 @@ const (
 	RandomValue   = "RandomValue"
 )
 
-func main() {
-	pollInterval := 2 * time.Second
-	reportInterval := 10 * time.Second
+const serverHost = "http://127.0.0.1:8080"
 
-	host := "127.0.0.1"
-	port := 8080
+const (
+	pollInterval   = 2 * time.Second
+	reportInterval = 10 * time.Second
+)
+
+func main() {
+	wg := sync.WaitGroup{}
 
 	metricsMap := make(map[string]interface{})
 
+	wg.Add(1)
 	go func(interval time.Duration) {
 		var memStats runtime.MemStats
 		var pollCount int
@@ -60,7 +70,7 @@ func main() {
 		rand.Seed(time.Now().Unix())
 
 		for {
-			<-time.After(interval)
+			time.Sleep(interval)
 
 			log.Println("Updating metrics...")
 
@@ -99,29 +109,30 @@ func main() {
 		}
 	}(pollInterval)
 
-	go func(host string, port int, interval time.Duration) {
+	wg.Add(1)
+	go func(serverHost string, interval time.Duration) {
 		for {
-			<-time.After(interval)
+			time.Sleep(interval)
+
 			log.Println("Sending metrics...")
 
 			for key, value := range metricsMap {
 				metricName := key
 
-				metricType := "gauge"
+				metricType := GaugeMetricType
 				if metricName == PollCount {
-					metricType = "counter"
+					metricType = CounterMetricType
 				}
 
 				var metricValue string
-				if metricType == "counter" {
+				if metricType == CounterMetricType {
 					metricValue = fmt.Sprintf("%d", value)
-				} else if metricType == "gauge" {
+				} else if metricType == GaugeMetricType {
 					metricValue = fmt.Sprintf("%f", value)
 				}
 
-				url := fmt.Sprintf("http://%s:%d/update/%s/%s/%s",
-					host,
-					port,
+				url := fmt.Sprintf("%s/update/%s/%s/%s",
+					serverHost,
 					metricType,
 					metricName,
 					metricValue,
@@ -137,14 +148,11 @@ func main() {
 
 				err = request.Body.Close()
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 				}
 			}
-
 		}
-	}(host, port, reportInterval)
+	}(serverHost, reportInterval)
 
-	for {
-		time.Sleep(time.Second)
-	}
+	wg.Wait()
 }

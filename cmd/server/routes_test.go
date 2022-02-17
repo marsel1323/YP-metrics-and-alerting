@@ -20,26 +20,32 @@ func TestRoutes(t *testing.T) {
 	resp, body := testRequest(t, ts, "POST", "/update/gauge/Alloc/123.000000")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "", body)
+	resp.Body.Close()
 
 	resp, body = testRequest(t, ts, "GET", "/value/gauge/Alloc")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "123.000", body)
+	resp.Body.Close()
 
 	resp, body = testRequest(t, ts, "POST", "/update/counter/testCounter/123")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "", body)
+	resp.Body.Close()
 
 	resp, body = testRequest(t, ts, "GET", "/value/counter/testCounter")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "123", body)
+	resp.Body.Close()
 
 	resp, body = testRequest(t, ts, "POST", "/update/counter/testCounter/321")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "", body)
+	resp.Body.Close()
 
 	resp, body = testRequest(t, ts, "GET", "/value/counter/testCounter")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "444", body)
+	resp.Body.Close()
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {

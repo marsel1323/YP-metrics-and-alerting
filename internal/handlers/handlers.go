@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -32,7 +31,6 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	metricValue := chi.URLParam(r, "metricValue")
-	log.Println(metricType, metricName, metricValue)
 
 	if metricType == GaugeType {
 		value, err := strconv.ParseFloat(metricValue, 64)
@@ -111,41 +109,20 @@ func (repo *Repository) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["GaugeMetrics"] = gaugeMetrics
-	data["CounterMetrics"] = counterMetrics
+	type htmlPage struct {
+		GaugeMetrics   map[string]float64
+		CounterMetrics map[string]int64
+	}
 
-	t, err := template.New("metricsHTML").Parse(`
-		<html>
-			<head>
-				<title>Metrics</title>
-				<meta http-equiv="refresh" content="10" />
-		  	</head>
-			<body>
-				<h2>Gauge Metrics</h1>
-				{{ $gaugeMetrics := index . "GaugeMetrics" }}
-				<ol>
-					{{ range $key, $value := $gaugeMetrics }}
-						<li>
-							<b>{{ $key }}</b>: {{ $value }}
-						</li>
-					{{ end }}
-				</ol>
-				
-				<h2>Counter Metrics</h1>
-				{{ $counterMetrics := index . "CounterMetrics" }}
-				<ol>
-					{{ range $key, $value := $counterMetrics }}
-						<li>
-							<b>{{ $key }}</b>: {{ $value }}
-						</li>
-					{{ end }}
-				</ol>
-			</body>
-		</html>
-		`)
+	data := htmlPage{
+		GaugeMetrics:   gaugeMetrics,
+		CounterMetrics: counterMetrics,
+	}
+
+	t, err := template.ParseFiles("../../internal/templates/metrics.gohtml")
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	t.Execute(w, data)
