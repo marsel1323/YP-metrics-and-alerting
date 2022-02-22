@@ -136,7 +136,7 @@ func main() {
 					ID:    metricName,
 					MType: metricType,
 				}
-				log.Println(metricType, metricName, value)
+				//log.Println(metricType, metricName, value)
 
 				//var metricValue string
 				if metricType == CounterMetricType {
