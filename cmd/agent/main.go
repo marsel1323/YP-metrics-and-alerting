@@ -149,7 +149,7 @@ func main() {
 				//	metricName,
 				//	metricValue,
 				//)
-				url := fmt.Sprintf("%s/update", serverHost)
+				url := fmt.Sprintf("%s/update/", serverHost)
 
 				//body := []byte(fmt.Sprintf("%f", value))
 
