@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"YP-metrics-and-alerting/internal/config"
+	"YP-metrics-and-alerting/internal/models"
 	"YP-metrics-and-alerting/internal/repository"
+	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"html/template"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -126,4 +129,94 @@ func (repo *Repository) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	t.Execute(w, data)
+}
+
+func (repo *Repository) UpdateMetricJsonHandler(w http.ResponseWriter, r *http.Request) {
+	var m models.Metrics
+
+	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.Println(m)
+	metricType := m.MType
+	metricName := m.ID
+
+	if metricType == GaugeType {
+		metricValue := *m.Value
+
+		err := repo.DB.SetGaugeMetricValue(metricName, metricValue)
+		if err != nil {
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if metricType == CounterType {
+		metricValue := *m.Delta
+
+		err := repo.DB.SetCounterMetricValue(metricName, metricValue)
+		if err != nil {
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	http.Error(w, "Unknown metric", http.StatusNotImplemented)
+}
+
+func (repo *Repository) GetMetricJsonHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var m models.Metrics
+
+	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.Println(m)
+	metricType := m.MType
+	metricName := m.ID
+
+	if metricType == GaugeType {
+		value, err := repo.DB.GetGaugeMetricValue(metricName)
+		if err != nil {
+			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			return
+		}
+
+		m.Value = &value
+
+		err = json.NewEncoder(w).Encode(m)
+		if err != nil {
+			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			return
+		}
+
+		return
+	} else if metricType == CounterType {
+		value, err := repo.DB.GetCounterMetricValue(metricName)
+		if err != nil {
+			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			return
+		}
+
+		m.Delta = &value
+
+		err = json.NewEncoder(w).Encode(m)
+		if err != nil {
+			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			return
+		}
+
+		return
+	} else {
+		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
+	}
 }
