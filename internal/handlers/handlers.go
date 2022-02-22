@@ -4,6 +4,7 @@ import (
 	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/repository"
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"net/http"
@@ -70,13 +71,8 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request) {
-	var m Metrics
-
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
-
-	m.MType = metricType
-	m.ID = metricName
 
 	if metricType == GaugeType {
 		value, err := repo.DB.GetGaugeMetricValue(metricName)
@@ -85,16 +81,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		//w.Write([]byte(fmt.Sprintf("%.3f", value)))
-
-		m.Value = &value
-
-		err = json.NewEncoder(w).Encode(m)
-		if err != nil {
-			http.Error(w, "Metric Not Found", http.StatusNotFound)
-			return
-		}
-
+		w.Write([]byte(fmt.Sprintf("%.3f", value)))
 		return
 	} else if metricType == CounterType {
 		value, err := repo.DB.GetCounterMetricValue(metricName)
@@ -103,14 +90,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		//w.Write([]byte(fmt.Sprintf("%d", value)))
-		m.Delta = &value
-
-		err = json.NewEncoder(w).Encode(m)
-		if err != nil {
-			http.Error(w, "Metric Not Found", http.StatusNotFound)
-			return
-		}
+		w.Write([]byte(fmt.Sprintf("%d", value)))
 		return
 	} else {
 		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
