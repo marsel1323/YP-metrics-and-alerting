@@ -131,7 +131,7 @@ func (repo *Repository) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 	t.Execute(w, data)
 }
 
-func (repo *Repository) UpdateMetricJsonHandler(w http.ResponseWriter, r *http.Request) {
+func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
 	var m models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -171,7 +171,7 @@ func (repo *Repository) UpdateMetricJsonHandler(w http.ResponseWriter, r *http.R
 	http.Error(w, "Unknown metric", http.StatusNotImplemented)
 }
 
-func (repo *Repository) GetMetricJsonHandler(w http.ResponseWriter, r *http.Request) {
+func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var m models.Metrics

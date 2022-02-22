@@ -130,7 +130,7 @@ func main() {
 					ID:    metricName,
 					MType: metricType,
 				}
-				//log.Println(metricType, metricName, value)
+				log.Println(metricType, metricName, value)
 
 				//var metricValue string
 				if metricType == CounterMetricType {
@@ -149,7 +149,7 @@ func main() {
 				//	metricName,
 				//	metricValue,
 				//)
-				url := fmt.Sprintf("%s/update/", serverHost)
+				url := fmt.Sprintf("%s/update", serverHost)
 
 				//body := []byte(fmt.Sprintf("%f", value))
 
@@ -161,7 +161,8 @@ func main() {
 
 				request, err := http.Post(url, "application/json", bytes.NewReader(body))
 				if err != nil {
-					log.Println(err)
+					log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
+					continue
 				}
 
 				err = request.Body.Close()
