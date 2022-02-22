@@ -50,6 +50,7 @@ const (
 	Sys           = "Sys"
 	PollCount     = "PollCount"
 	RandomValue   = "RandomValue"
+	TotalAlloc    = "TotalAlloc"
 )
 
 const serverHost = "http://127.0.0.1:8080"
@@ -105,6 +106,7 @@ func main() {
 			metricsMap[PauseTotalNs] = float64(memStats.PauseTotalNs)
 			metricsMap[StackInuse] = float64(memStats.StackInuse)
 			metricsMap[StackSys] = float64(memStats.StackSys)
+			metricsMap[TotalAlloc] = float64(memStats.TotalAlloc)
 			metricsMap[Sys] = float64(memStats.Sys)
 			metricsMap[PollCount] = int64(pollCount)
 			metricsMap[RandomValue] = float64(rand.Intn(10000))
