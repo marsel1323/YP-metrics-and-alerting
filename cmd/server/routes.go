@@ -18,6 +18,8 @@ func Routes(app *config.Application) *chi.Mux {
 	mux.Get("/", repo.GetAllMetricsHandler)
 	mux.Post("/update/{metricType}/{metricName}/{metricValue}", repo.UpdateMetricHandler)
 	mux.Get("/value/{metricType}/{metricName}", repo.GetMetricHandler)
+	mux.Post("/update", repo.UpdateMetricJsonHandler)
+	mux.Post("/value", repo.GetMetricJsonHandler)
 
 	return mux
 }
