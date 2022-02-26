@@ -1,6 +1,7 @@
 package main
 
 import (
+	"YP-metrics-and-alerting/internal/helpers"
 	"YP-metrics-and-alerting/internal/models"
 	"bytes"
 	"encoding/json"
@@ -12,9 +13,6 @@ import (
 	"sync"
 	"time"
 )
-
-type Gauge float64
-type Counter int64
 
 const (
 	GaugeMetricType   = "gauge"
@@ -53,125 +51,127 @@ const (
 	TotalAlloc    = "TotalAlloc"
 )
 
-const serverHost = "http://127.0.0.1:8080"
-
-const (
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
-)
-
 func main() {
+	serverHost := "http://" + helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
+	reportInterval := helpers.StringToSeconds(helpers.GetEnv("REPORT_INTERVAL", "10s"))
+	pollInterval := helpers.StringToSeconds(helpers.GetEnv("POLL_INTERVAL", "2s"))
+
+	metricsMap := NewMetricsMap()
+
 	wg := sync.WaitGroup{}
 
-	metricsMap := make(map[string]interface{})
+	wg.Add(1)
+	go metricsMap.UpdateMetrics(pollInterval)
 
 	wg.Add(1)
-	go UpdateMetrics(metricsMap)(pollInterval)
-
-	wg.Add(1)
-	go SendMetrics(metricsMap)(serverHost, reportInterval)
+	go metricsMap.SendMetrics(serverHost, reportInterval)
 
 	wg.Wait()
 }
 
-func SendMetrics(metricsMap map[string]interface{}) func(serverHost string, interval time.Duration) {
-	return func(serverHost string, interval time.Duration) {
-		for {
-			time.Sleep(interval)
+type MetricsMap map[string]interface{}
 
-			log.Println("Sending metrics...")
+func NewMetricsMap() MetricsMap {
+	return make(map[string]interface{})
+}
 
-			for key, value := range metricsMap {
-				metricName := key
+func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Duration) {
 
-				metricType := GaugeMetricType
-				if metricName == PollCount {
-					metricType = CounterMetricType
-				}
+	for {
+		time.Sleep(interval)
 
-				metric := &models.Metrics{
-					ID:    metricName,
-					MType: metricType,
-				}
-				log.Println(metricType, metricName, value)
+		log.Println("Sending metrics...")
 
-				//var metricValue string
-				if metricType == CounterMetricType {
-					metricValue := value.(int64)
-					metric.Delta = &metricValue
-				} else if metricType == GaugeMetricType {
-					metricValue := value.(float64)
-					metric.Value = &metricValue
-				}
+		for key, value := range metricsMap {
+			metricName := key
 
-				url := fmt.Sprintf("%s/update", serverHost)
+			metricType := GaugeMetricType
+			if metricName == PollCount {
+				metricType = CounterMetricType
+			}
 
-				body, err := json.Marshal(metric)
-				if err != nil {
-					log.Println(err)
-					return
-				}
+			metric := &models.Metrics{
+				ID:    metricName,
+				MType: metricType,
+			}
+			log.Println(metricType, metricName, value)
 
-				request, err := http.Post(url, "application/json", bytes.NewReader(body))
-				if err != nil {
-					log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
-					continue
-				}
+			//var metricValue string
+			if metricType == CounterMetricType {
+				metricValue := value.(int64)
+				metric.Delta = &metricValue
+			} else if metricType == GaugeMetricType {
+				metricValue := value.(float64)
+				metric.Value = &metricValue
+			}
 
-				err = request.Body.Close()
-				if err != nil {
-					log.Println(err)
-				}
+			url := fmt.Sprintf("%s/update", serverHost)
+
+			body, err := json.Marshal(metric)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			request, err := http.Post(url, "application/json", bytes.NewReader(body))
+			if err != nil {
+				log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
+				continue
+			}
+
+			err = request.Body.Close()
+			if err != nil {
+				log.Println(err)
 			}
 		}
 	}
+
 }
 
-func UpdateMetrics(metricsMap map[string]interface{}) func(interval time.Duration) {
-	return func(interval time.Duration) {
-		var memStats runtime.MemStats
-		var pollCount int
+func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
+	var memStats runtime.MemStats
+	var pollCount int
 
-		rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().Unix())
 
-		for {
-			time.Sleep(interval)
+	for {
+		time.Sleep(interval)
 
-			log.Println("Updating metrics...")
+		log.Println("Updating metrics...")
 
-			pollCount++
+		pollCount++
 
-			runtime.ReadMemStats(&memStats)
+		runtime.ReadMemStats(&memStats)
 
-			metricsMap[Alloc] = float64(memStats.Alloc)
-			metricsMap[BuckHashSys] = float64(memStats.BuckHashSys)
-			metricsMap[Frees] = float64(memStats.Frees)
-			metricsMap[GCCPUFraction] = (memStats.GCCPUFraction)
-			metricsMap[GCSys] = float64(memStats.GCSys)
-			metricsMap[HeapAlloc] = float64(memStats.HeapAlloc)
-			metricsMap[HeapIdle] = float64(memStats.HeapIdle)
-			metricsMap[HeapInuse] = float64(memStats.HeapInuse)
-			metricsMap[HeapObjects] = float64(memStats.HeapObjects)
-			metricsMap[HeapReleased] = float64(memStats.HeapReleased)
-			metricsMap[HeapSys] = float64(memStats.HeapSys)
-			metricsMap[LastGC] = float64(memStats.LastGC)
-			metricsMap[Lookups] = float64(memStats.Lookups)
-			metricsMap[MCacheInuse] = float64(memStats.MCacheInuse)
-			metricsMap[MCacheSys] = float64(memStats.MCacheSys)
-			metricsMap[MSpanInuse] = float64(memStats.MSpanInuse)
-			metricsMap[MSpanSys] = float64(memStats.MSpanSys)
-			metricsMap[Mallocs] = float64(memStats.Mallocs)
-			metricsMap[NextGC] = float64(memStats.NextGC)
-			metricsMap[NumForcedGC] = float64(memStats.NumForcedGC)
-			metricsMap[NumGC] = float64(memStats.NumGC)
-			metricsMap[OtherSys] = float64(memStats.OtherSys)
-			metricsMap[PauseTotalNs] = float64(memStats.PauseTotalNs)
-			metricsMap[StackInuse] = float64(memStats.StackInuse)
-			metricsMap[StackSys] = float64(memStats.StackSys)
-			metricsMap[TotalAlloc] = float64(memStats.TotalAlloc)
-			metricsMap[Sys] = float64(memStats.Sys)
-			metricsMap[PollCount] = int64(pollCount)
-			metricsMap[RandomValue] = float64(rand.Intn(10000))
-		}
+		metricsMap[Alloc] = float64(memStats.Alloc)
+		metricsMap[BuckHashSys] = float64(memStats.BuckHashSys)
+		metricsMap[Frees] = float64(memStats.Frees)
+		metricsMap[GCCPUFraction] = (memStats.GCCPUFraction)
+		metricsMap[GCSys] = float64(memStats.GCSys)
+		metricsMap[HeapAlloc] = float64(memStats.HeapAlloc)
+		metricsMap[HeapIdle] = float64(memStats.HeapIdle)
+		metricsMap[HeapInuse] = float64(memStats.HeapInuse)
+		metricsMap[HeapObjects] = float64(memStats.HeapObjects)
+		metricsMap[HeapReleased] = float64(memStats.HeapReleased)
+		metricsMap[HeapSys] = float64(memStats.HeapSys)
+		metricsMap[LastGC] = float64(memStats.LastGC)
+		metricsMap[Lookups] = float64(memStats.Lookups)
+		metricsMap[MCacheInuse] = float64(memStats.MCacheInuse)
+		metricsMap[MCacheSys] = float64(memStats.MCacheSys)
+		metricsMap[MSpanInuse] = float64(memStats.MSpanInuse)
+		metricsMap[MSpanSys] = float64(memStats.MSpanSys)
+		metricsMap[Mallocs] = float64(memStats.Mallocs)
+		metricsMap[NextGC] = float64(memStats.NextGC)
+		metricsMap[NumForcedGC] = float64(memStats.NumForcedGC)
+		metricsMap[NumGC] = float64(memStats.NumGC)
+		metricsMap[OtherSys] = float64(memStats.OtherSys)
+		metricsMap[PauseTotalNs] = float64(memStats.PauseTotalNs)
+		metricsMap[StackInuse] = float64(memStats.StackInuse)
+		metricsMap[StackSys] = float64(memStats.StackSys)
+		metricsMap[TotalAlloc] = float64(memStats.TotalAlloc)
+		metricsMap[Sys] = float64(memStats.Sys)
+		metricsMap[PollCount] = int64(pollCount)
+		metricsMap[RandomValue] = float64(rand.Intn(10000))
 	}
+
 }
