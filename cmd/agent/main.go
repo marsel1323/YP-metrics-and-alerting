@@ -66,7 +66,69 @@ func main() {
 	metricsMap := make(map[string]interface{})
 
 	wg.Add(1)
-	go func(interval time.Duration) {
+	go UpdateMetrics(metricsMap)(pollInterval)
+
+	wg.Add(1)
+	go SendMetrics(metricsMap)(serverHost, reportInterval)
+
+	wg.Wait()
+}
+
+func SendMetrics(metricsMap map[string]interface{}) func(serverHost string, interval time.Duration) {
+	return func(serverHost string, interval time.Duration) {
+		for {
+			time.Sleep(interval)
+
+			log.Println("Sending metrics...")
+
+			for key, value := range metricsMap {
+				metricName := key
+
+				metricType := GaugeMetricType
+				if metricName == PollCount {
+					metricType = CounterMetricType
+				}
+
+				metric := &models.Metrics{
+					ID:    metricName,
+					MType: metricType,
+				}
+				log.Println(metricType, metricName, value)
+
+				//var metricValue string
+				if metricType == CounterMetricType {
+					metricValue := value.(int64)
+					metric.Delta = &metricValue
+				} else if metricType == GaugeMetricType {
+					metricValue := value.(float64)
+					metric.Value = &metricValue
+				}
+
+				url := fmt.Sprintf("%s/update", serverHost)
+
+				body, err := json.Marshal(metric)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				request, err := http.Post(url, "application/json", bytes.NewReader(body))
+				if err != nil {
+					log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
+					continue
+				}
+
+				err = request.Body.Close()
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+	}
+}
+
+func UpdateMetrics(metricsMap map[string]interface{}) func(interval time.Duration) {
+	return func(interval time.Duration) {
 		var memStats runtime.MemStats
 		var pollCount int
 
@@ -111,69 +173,5 @@ func main() {
 			metricsMap[PollCount] = int64(pollCount)
 			metricsMap[RandomValue] = float64(rand.Intn(10000))
 		}
-	}(pollInterval)
-
-	wg.Add(1)
-	go func(serverHost string, interval time.Duration) {
-		for {
-			time.Sleep(interval)
-
-			log.Println("Sending metrics...")
-
-			for key, value := range metricsMap {
-				metricName := key
-
-				metricType := GaugeMetricType
-				if metricName == PollCount {
-					metricType = CounterMetricType
-				}
-
-				metric := &models.Metrics{
-					ID:    metricName,
-					MType: metricType,
-				}
-				log.Println(metricType, metricName, value)
-
-				//var metricValue string
-				if metricType == CounterMetricType {
-					//metricValue = fmt.Sprintf("%d", value)
-					metricValue := value.(int64)
-					metric.Delta = &metricValue
-				} else if metricType == GaugeMetricType {
-					//metricValue = fmt.Sprintf("%f", value)
-					metricValue := value.(float64)
-					metric.Value = &metricValue
-				}
-
-				//url := fmt.Sprintf("%s/update/%s/%s/%s",
-				//	serverHost,
-				//	metricType,
-				//	metricName,
-				//	metricValue,
-				//)
-				url := fmt.Sprintf("%s/update", serverHost)
-
-				//body := []byte(fmt.Sprintf("%f", value))
-
-				body, err := json.Marshal(metric)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-
-				request, err := http.Post(url, "application/json", bytes.NewReader(body))
-				if err != nil {
-					log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
-					continue
-				}
-
-				err = request.Body.Close()
-				if err != nil {
-					log.Println(err)
-				}
-			}
-		}
-	}(serverHost, reportInterval)
-
-	wg.Wait()
+	}
 }
