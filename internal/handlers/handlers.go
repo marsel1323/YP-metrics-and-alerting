@@ -239,9 +239,14 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
 	log.Println("ServeFileStorage")
 
 	if repo.App.Restore {
-		err := fileStorage.Retrieve()
+		mapStorage, err := fileStorage.Retrieve()
 		if err != nil {
 			log.Println(err)
+		} else {
+			err = repo.DB.BunchSetMetrics(mapStorage)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 

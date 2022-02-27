@@ -10,6 +10,8 @@ type StorageRepo interface {
 	GetAllCounterMetricValues() (map[string]int64, error)
 	GetCounterMetricValue(string) (int64, error)
 	SetCounterMetricValue(string, int64) error
+
+	BunchSetMetrics(mapStorage *MapStorageRepo) error
 }
 
 type MapStorageRepo struct {
@@ -55,5 +57,17 @@ func (m *MapStorageRepo) GetCounterMetricValue(metricName string) (int64, error)
 
 func (m *MapStorageRepo) SetCounterMetricValue(metricName string, metricValue int64) error {
 	m.Counter[metricName] += metricValue
+	return nil
+}
+
+func (m *MapStorageRepo) BunchSetMetrics(mapStorage *MapStorageRepo) error {
+	if mapStorage.Gauge != nil {
+		m.Gauge = mapStorage.Gauge
+	}
+
+	if mapStorage.Counter != nil {
+		m.Counter = mapStorage.Counter
+	}
+
 	return nil
 }

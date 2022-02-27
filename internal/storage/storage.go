@@ -14,7 +14,7 @@ type storage struct {
 
 type Storage interface {
 	Save(data []byte) error
-	Retrieve() error
+	Retrieve() (*repository.MapStorageRepo, error)
 }
 
 func NewFileStorage(fileName string) *storage {
@@ -37,24 +37,24 @@ func (s *storage) Save(data []byte) error {
 	return nil
 }
 
-func (s *storage) Retrieve() error {
+func (s *storage) Retrieve() (*repository.MapStorageRepo, error) {
 	log.Println("restore from file...")
 
 	f, err := os.Open(s.fileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 
 	data, err := io.ReadAll(f)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	storage := repository.MapStorageRepo{}
-	err = json.Unmarshal(data, &storage)
+	mapStorage := &repository.MapStorageRepo{}
+	err = json.Unmarshal(data, mapStorage)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return mapStorage, nil
 }

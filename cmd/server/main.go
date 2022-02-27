@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	log.Println(serverAddress, storeInterval, storeFile, restore)
 	cfg := config.Config{
 		Address:       serverAddress,
 		StoreFile:     storeFile,

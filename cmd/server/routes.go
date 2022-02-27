@@ -10,9 +10,6 @@ func Routes(repo *handlers.Repository) *chi.Mux {
 	mux := chi.NewMux()
 	mux.Use(middleware.Logger)
 
-	//storage := repository.NewMapStorageRepo()
-	//repo := handlers.NewRepo(app, storage)
-
 	mux.Get("/", repo.GetAllMetricsHandler)
 	mux.Post("/update/{metricType}/{metricName}/{metricValue}", repo.UpdateMetricHandler)
 	mux.Get("/value/{metricType}/{metricName}", repo.GetMetricHandler)
