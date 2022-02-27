@@ -100,6 +100,9 @@ func (repo *Repository) Jsonchik() {
 	}
 
 	err = repo.App.FileStorage.Save(data)
+	if err != nil {
+		return
+	}
 }
 
 func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request) {
