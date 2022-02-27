@@ -206,8 +206,9 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 		value, err := repo.DB.GetGaugeMetricValue(metricName)
 		if err != nil {
 			log.Println(err)
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
+			//http.Error(w, err.Error(), http.StatusNotFound)
+			//return
+			value = 0
 		}
 
 		m.Value = &value
@@ -226,8 +227,9 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 		value, err := repo.DB.GetCounterMetricValue(metricName)
 		if err != nil {
 			log.Println(err)
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
+			//http.Error(w, err.Error(), http.StatusNotFound)
+			//return
+			value = 0
 		}
 
 		m.Delta = &value
