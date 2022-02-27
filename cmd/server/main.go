@@ -59,12 +59,14 @@ func handleSignals(repo *handlers.Repository) {
 	signal.Notify(captureSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 	time.Sleep(1 * time.Second)
 
-	switch <-captureSignal {
-	case syscall.SIGINT:
-		repo.Jsonchik()
-	default:
-		log.Println("unknown signal")
-	}
+	//switch <-captureSignal {
+	//case syscall.SIGINT:
+	//	repo.Jsonchik()
+	//default:
+	//	log.Println("unknown signal")
+	//}
+
+	repo.Jsonchik()
 
 	os.Exit(0)
 }
