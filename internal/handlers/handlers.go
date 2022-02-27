@@ -149,7 +149,14 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	metricType := m.MType
 	metricName := m.ID
 
-	log.Println(m.MType, m.ID, m.Value, m.Delta)
+	log.Println(m.MType, m.ID)
+	if m.Value != nil {
+		log.Println("m.Value", *m.Value)
+	}
+
+	if m.Delta != nil {
+		log.Println("m.Delta", *m.Delta)
+	}
 
 	if repo.App.Config.StoreInterval == 0 {
 		log.Println("StoreInterval == 0")
@@ -208,12 +215,14 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 			log.Println(err)
 			//http.Error(w, err.Error(), http.StatusNotFound)
 			//return
-			value = 0
+			//value = 0
 		}
 
 		m.Value = &value
 
-		log.Println(m.Value)
+		if m.Value != nil {
+			log.Println(*m.Value)
+		}
 
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
@@ -229,12 +238,13 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 			log.Println(err)
 			//http.Error(w, err.Error(), http.StatusNotFound)
 			//return
-			value = 0
+			//value = 0
 		}
 
 		m.Delta = &value
-
-		log.Println(m.Delta)
+		if m.Delta != nil {
+			log.Println(*m.Delta)
+		}
 
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
