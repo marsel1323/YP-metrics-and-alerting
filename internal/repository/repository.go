@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -32,7 +31,7 @@ func NewMapStorageRepo() *MapStorageRepo {
 func (m *MapStorageRepo) GetGaugeMetricValue(metricName string) (float64, error) {
 	value, ok := m.Gauge[metricName]
 	if !ok {
-		return 0, errors.New(fmt.Sprintf("metric '%s' not found", metricName))
+		return 0, fmt.Errorf("metric '%s' not found", metricName)
 	}
 	return value, nil
 }
@@ -53,7 +52,7 @@ func (m *MapStorageRepo) GetAllCounterMetricValues() (map[string]int64, error) {
 func (m *MapStorageRepo) GetCounterMetricValue(metricName string) (int64, error) {
 	value, ok := m.Counter[metricName]
 	if !ok {
-		return 0, errors.New(fmt.Sprintf("metric '%s' not found", metricName))
+		return 0, fmt.Errorf("metric '%s' not found", metricName)
 	}
 	return value, nil
 }

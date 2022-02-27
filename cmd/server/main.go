@@ -26,13 +26,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("restore", restore)
 
 	flag.StringVar(&cfg.Address, "a", serverAddress, "Listen to address:port")
 	flag.DurationVar(&cfg.StoreInterval, "i", storeInterval, "Interval of store to file")
 	flag.StringVar(&cfg.StoreFile, "f", storeFile, "Save metrics to file")
 	flag.BoolVar(&cfg.Restore, "r", restore, "Restore from file")
 	flag.Parse()
-
+	log.Println(cfg)
+	log.Println("restore", &cfg.Restore)
 	app := &config.Application{
 		Config: cfg,
 	}
