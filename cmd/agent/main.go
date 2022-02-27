@@ -2,12 +2,12 @@ package main
 
 import (
 	"YP-metrics-and-alerting/internal/config"
+	"YP-metrics-and-alerting/internal/helpers"
 	"YP-metrics-and-alerting/internal/models"
 	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/caarlos0/env/v6"
 	"log"
 	"math/rand"
 	"net/http"
@@ -56,15 +56,14 @@ const (
 func main() {
 	cfg := config.AgentConfig{}
 
-	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "Send metrics to address:port")
-	flag.DurationVar(&cfg.ReportInterval, "r", 10*time.Second, "Report of interval")
-	flag.DurationVar(&cfg.PoolInterval, "p", 2*time.Second, "Pool of interval")
-	flag.Parse()
+	serverHost := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
+	reportInterval := helpers.StringToSeconds(helpers.GetEnv("REPORT_INTERVAL", "10s"))
+	pollInterval := helpers.StringToSeconds(helpers.GetEnv("POLL_INTERVAL", "2s"))
 
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+	flag.StringVar(&cfg.Address, "a", serverHost, "Send metrics to address:port")
+	flag.DurationVar(&cfg.ReportInterval, "r", reportInterval, "Report of interval")
+	flag.DurationVar(&cfg.PoolInterval, "p", pollInterval, "Pool of interval")
+	flag.Parse()
 
 	metricsMap := NewMetricsMap()
 

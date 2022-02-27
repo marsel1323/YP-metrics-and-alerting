@@ -3,14 +3,15 @@ package main
 import (
 	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/handlers"
+	"YP-metrics-and-alerting/internal/helpers"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
 	"flag"
-	"github.com/caarlos0/env/v6"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -18,16 +19,19 @@ import (
 func main() {
 	cfg := config.ServerConfig{}
 
-	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "Listen to address:port")
-	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "Save metrics to file")
-	flag.BoolVar(&cfg.Restore, "r", true, "Restore from file")
-	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "Interval of store to file")
-	flag.Parse()
-
-	err := env.Parse(&cfg)
+	serverAddress := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
+	storeInterval := helpers.StringToSeconds(helpers.GetEnv("STORE_INTERVAL", "300s"))
+	storeFile := helpers.GetEnv("STORE_FILE", "/tmp/devops-metrics-db.json")
+	restore, err := strconv.ParseBool(helpers.GetEnv("RESTORE", "true"))
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	flag.StringVar(&cfg.Address, "a", serverAddress, "Listen to address:port")
+	flag.DurationVar(&cfg.StoreInterval, "i", storeInterval, "Interval of store to file")
+	flag.StringVar(&cfg.StoreFile, "f", storeFile, "Save metrics to file")
+	flag.BoolVar(&cfg.Restore, "r", restore, "Restore from file")
+	flag.Parse()
 
 	app := &config.Application{
 		Config: cfg,
@@ -45,7 +49,7 @@ func main() {
 	go handleSignals(repo)
 
 	server := &http.Server{
-		Addr:    cfg.Address,
+		Addr:    app.Config.Address,
 		Handler: Routes(repo),
 	}
 	log.Println("Server is serving on", server.Addr)
