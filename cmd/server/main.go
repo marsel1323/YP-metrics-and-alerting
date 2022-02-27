@@ -17,6 +17,8 @@ import (
 )
 
 func main() {
+	log.Println(os.Args)
+
 	cfg := config.ServerConfig{}
 
 	serverAddress := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
@@ -34,7 +36,7 @@ func main() {
 	flag.BoolVar(&cfg.Restore, "r", restore, "Restore from file")
 	flag.Parse()
 	log.Println(cfg)
-	log.Println("restore", &cfg.Restore)
+	log.Println("restore", cfg.Restore)
 	app := &config.Application{
 		Config: cfg,
 	}
