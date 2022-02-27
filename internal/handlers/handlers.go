@@ -193,26 +193,31 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 	var m models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	metricType := m.MType
 	metricName := m.ID
 
+	log.Println(metricType, metricName)
+
 	if metricType == GaugeType {
 		value, err := repo.DB.GetGaugeMetricValue(metricName)
 		if err != nil {
-			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
 		m.Value = &value
 
-		log.Println(metricType, metricName, m.Value)
+		log.Println(m.Value)
 
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
-			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -220,22 +225,25 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 	} else if metricType == CounterType {
 		value, err := repo.DB.GetCounterMetricValue(metricName)
 		if err != nil {
-			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
 		m.Delta = &value
 
-		log.Println(metricType, metricName, m.Delta)
+		log.Println(m.Delta)
 
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
-			http.Error(w, "Metric Not Found", http.StatusNotFound)
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
 		return
 	} else {
+		log.Println("Metric Type Not Found")
 		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 	}
 }
