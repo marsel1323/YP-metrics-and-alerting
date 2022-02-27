@@ -238,7 +238,7 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
 	log.Println("ServeFileStorage")
 
-	if repo.App.Restore {
+	if repo.App.Config.Restore {
 		mapStorage, err := fileStorage.Retrieve()
 		if err != nil {
 			log.Println(err)
@@ -250,12 +250,12 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
 		}
 	}
 
-	if repo.App.StoreInterval == 0 {
+	if repo.App.Config.StoreInterval == 0 {
 		log.Println("STORE_INTERVAL == 0")
 		return
 	}
 
-	storeTickerInterval := time.NewTicker(repo.App.StoreInterval)
+	storeTickerInterval := time.NewTicker(repo.App.Config.StoreInterval)
 	for range storeTickerInterval.C {
 		gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
 		if err != nil {

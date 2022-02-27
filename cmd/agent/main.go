@@ -1,11 +1,13 @@
 package main
 
 import (
-	"YP-metrics-and-alerting/internal/helpers"
+	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/models"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"github.com/caarlos0/env/v6"
 	"log"
 	"math/rand"
 	"net/http"
@@ -52,19 +54,27 @@ const (
 )
 
 func main() {
-	serverHost := "http://" + helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
-	reportInterval := helpers.StringToSeconds(helpers.GetEnv("REPORT_INTERVAL", "10s"))
-	pollInterval := helpers.StringToSeconds(helpers.GetEnv("POLL_INTERVAL", "2s"))
+	cfg := config.AgentConfig{}
+
+	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "Send metrics to address:port")
+	flag.DurationVar(&cfg.ReportInterval, "r", 10*time.Second, "Report of interval")
+	flag.DurationVar(&cfg.PoolInterval, "p", 2*time.Second, "Pool of interval")
+	flag.Parse()
+
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	metricsMap := NewMetricsMap()
 
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
-	go metricsMap.UpdateMetrics(pollInterval)
+	go metricsMap.UpdateMetrics(cfg.PoolInterval)
 
 	wg.Add(1)
-	go metricsMap.SendMetrics(serverHost, reportInterval)
+	go metricsMap.SendMetrics(cfg.Address, cfg.ReportInterval)
 
 	wg.Wait()
 }
@@ -102,7 +112,7 @@ func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Durati
 				metric.Value = &metricValue
 			}
 
-			url := fmt.Sprintf("%s/update", serverHost)
+			url := fmt.Sprintf("http://%s/update", serverHost)
 
 			body, err := json.Marshal(metric)
 			if err != nil {
