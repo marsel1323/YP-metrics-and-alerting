@@ -17,8 +17,8 @@ import (
 
 func main() {
 	serverAddress := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
-	storeInterval := helpers.StringToSeconds(helpers.GetEnv("STORE_INTERVAL", "0s"))
-	storeFile := helpers.GetEnv("STORE_FILE", "devops-metrics-db.json")
+	storeInterval := helpers.StringToSeconds(helpers.GetEnv("STORE_INTERVAL", "300s"))
+	storeFile := helpers.GetEnv("STORE_FILE", "/tmp/devops-metrics-db.json")
 	restore, err := strconv.ParseBool(helpers.GetEnv("RESTORE", "true"))
 	if err != nil {
 		log.Fatal(err)
