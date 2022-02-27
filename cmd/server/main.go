@@ -16,27 +16,36 @@ import (
 	"time"
 )
 
+var (
+	serverAddressFlag = flag.String("a", "127.0.0.1:8080", "Listen to address:port")
+	storeIntervalFlag = flag.String("i", "300s", "Interval of store to file")
+	storeFileFlag     = flag.String("f", "/tmp/devops-metrics-db.json", "Save metrics to file")
+	restoreFlag       = flag.String("r", "true", "Restore from file")
+)
+
 func main() {
 	log.Println(os.Args)
 
-	cfg := config.ServerConfig{}
+	flag.Parse()
 
-	serverAddress := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
-	storeInterval := helpers.StringToSeconds(helpers.GetEnv("STORE_INTERVAL", "30s"))
-	storeFile := helpers.GetEnv("STORE_FILE", "/tmp/devops-metric-db.json")
-	restore, err := strconv.ParseBool(helpers.GetEnv("RESTORE", "true"))
+	serverAddress := helpers.GetEnv("ADDRESS", *serverAddressFlag)
+	storeInterval := helpers.StringToSeconds(helpers.GetEnv("STORE_INTERVAL", *storeIntervalFlag))
+	storeFile := helpers.GetEnv("STORE_FILE", *storeFileFlag)
+	restore, err := strconv.ParseBool(helpers.GetEnv("RESTORE", *restoreFlag))
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("restore", restore)
 
-	flag.StringVar(&cfg.Address, "a", serverAddress, "Listen to address:port")
-	flag.DurationVar(&cfg.StoreInterval, "i", storeInterval, "Interval of store to file")
-	flag.StringVar(&cfg.StoreFile, "f", storeFile, "Save metrics to file")
-	flag.BoolVar(&cfg.Restore, "r", restore, "Restore from file")
-	flag.Parse()
+	cfg := config.ServerConfig{
+		Address:       serverAddress,
+		StoreFile:     storeFile,
+		Restore:       restore,
+		StoreInterval: storeInterval,
+	}
+
 	log.Println(cfg)
 	log.Println("restore", cfg.Restore)
+
 	app := &config.Application{
 		Config: cfg,
 	}
