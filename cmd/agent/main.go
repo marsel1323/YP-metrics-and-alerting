@@ -76,7 +76,6 @@ func NewMetricsMap() MetricsMap {
 }
 
 func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Duration) {
-
 	for {
 		time.Sleep(interval)
 
@@ -94,9 +93,7 @@ func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Durati
 				ID:    metricName,
 				MType: metricType,
 			}
-			log.Println(metricType, metricName, value)
 
-			//var metricValue string
 			if metricType == CounterMetricType {
 				metricValue := value.(int64)
 				metric.Delta = &metricValue

@@ -4,6 +4,7 @@ import (
 	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/models"
 	"YP-metrics-and-alerting/internal/repository"
+	"YP-metrics-and-alerting/internal/storage"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
@@ -69,7 +71,35 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if repo.App.StoreInterval == 0 {
+		log.Println("StoreInterval == 0")
+		repo.Jsonchik()
+	}
+
 	http.Error(w, "Unknown metric", http.StatusNotImplemented)
+}
+
+func (repo *Repository) Jsonchik() {
+	log.Println("Jsonchik")
+	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
+	if err != nil {
+		return
+	}
+
+	counterMetrics, err := repo.DB.GetAllCounterMetricValues()
+	if err != nil {
+		return
+	}
+
+	data, err := json.MarshalIndent(repository.MapStorageRepo{
+		Gauge:   gaugeMetrics,
+		Counter: counterMetrics,
+	}, "", "  ")
+	if err != nil {
+		return
+	}
+
+	err = repo.App.FileStorage.Save(data)
 }
 
 func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request) {
@@ -138,9 +168,14 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println(m)
 	metricType := m.MType
 	metricName := m.ID
+
+	log.Println("StoreInterval", repo.App.StoreInterval)
+	if repo.App.StoreInterval == 0 {
+		log.Println("StoreInterval == 0")
+		repo.Jsonchik()
+	}
 
 	if metricType == GaugeType {
 		metricValue := *m.Value
@@ -180,7 +215,6 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println(m)
 	metricType := m.MType
 	metricName := m.ID
 
@@ -218,5 +252,46 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 		return
 	} else {
 		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
+	}
+}
+
+func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
+	if repo.App.Restore {
+		err := fileStorage.Retrieve()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	if repo.App.StoreInterval == 0 {
+		log.Println("STORE_INTERVAL == 0")
+		return
+	}
+
+	storeTickerInterval := time.NewTicker(repo.App.StoreInterval)
+	for range storeTickerInterval.C {
+		gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
+		if err != nil {
+			return
+		}
+
+		counterMetrics, err := repo.DB.GetAllCounterMetricValues()
+		if err != nil {
+			return
+		}
+
+		data, err := json.MarshalIndent(repository.MapStorageRepo{
+			Gauge:   gaugeMetrics,
+			Counter: counterMetrics,
+		}, "", "  ")
+		if err != nil {
+			return
+		}
+
+		err = fileStorage.Save(data)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 }
