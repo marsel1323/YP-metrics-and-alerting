@@ -8,10 +8,10 @@ import (
 
 func GetEnv(key string, defaultValue string) string {
 	env, ok := os.LookupEnv(key)
-	if !ok {
-		return defaultValue
+	if ok {
+		return env
 	}
-	return env
+	return defaultValue
 }
 
 func StringToSeconds(value string) time.Duration {

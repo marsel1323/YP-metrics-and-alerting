@@ -16,16 +16,11 @@ import (
 	"time"
 )
 
-var (
-	serverAddressFlag = flag.String("a", "127.0.0.1:8080", "Listen to address:port")
-	storeIntervalFlag = flag.String("i", "300s", "Interval of store to file")
-	storeFileFlag     = flag.String("f", "/tmp/devops-metrics-db.json", "Save metrics to file")
-	restoreFlag       = flag.String("r", "true", "Restore from file")
-)
-
 func main() {
-	log.Println(os.Args)
-
+	serverAddressFlag := flag.String("a", "127.0.0.1:8080", "Listen to address:port")
+	storeIntervalFlag := flag.String("i", "300s", "Interval of store to file")
+	storeFileFlag := flag.String("f", "/tmp/devops-metrics-db.json", "Save metrics to file")
+	restoreFlag := flag.String("r", "true", "Restore from file")
 	flag.Parse()
 
 	serverAddress := helpers.GetEnv("ADDRESS", *serverAddressFlag)
@@ -43,9 +38,6 @@ func main() {
 		StoreInterval: storeInterval,
 	}
 
-	log.Println(cfg)
-	log.Println("restore", cfg.Restore)
-
 	app := &config.Application{
 		Config: cfg,
 	}
@@ -55,6 +47,7 @@ func main() {
 	repo := handlers.NewRepo(app, mapStorage)
 
 	fileStorage := storage.NewFileStorage(repo.App.Config.StoreFile)
+
 	app.FileStorage = fileStorage
 
 	go repo.ServeFileStorage(fileStorage)
@@ -70,8 +63,8 @@ func main() {
 }
 
 func handleSignals(repo *handlers.Repository) {
-	var captureSignal = make(chan os.Signal, 1)
-	signal.Notify(captureSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
+	captureSignal := make(chan os.Signal, 1)
+	signal.Notify(captureSignal, syscall.SIGINT)
 	time.Sleep(1 * time.Second)
 
 	switch <-captureSignal {
