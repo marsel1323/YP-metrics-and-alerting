@@ -151,6 +151,11 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 
 	log.Println(m.MType, m.ID, m.Value, m.Delta)
 
+	if repo.App.Config.StoreInterval == 0 {
+		log.Println("StoreInterval == 0")
+		repo.SaveMetrics()
+	}
+
 	if metricType == GaugeType {
 		metricValue := *m.Value
 
