@@ -33,9 +33,11 @@ func NewRepo(appConfig *config.Application, db repository.StorageRepo) *Reposito
 }
 
 func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("UpdateMetricHandler")
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	metricValue := chi.URLParam(r, "metricValue")
+	log.Println(metricType, metricName, metricValue)
 
 	if metricType == GaugeType {
 		value, err := strconv.ParseFloat(metricValue, 64)
@@ -74,35 +76,11 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 	http.Error(w, "Unknown metric", http.StatusNotImplemented)
 }
 
-func (repo *Repository) SaveMetrics() {
-	log.Println("SaveMetrics")
-	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
-	if err != nil {
-		return
-	}
-
-	counterMetrics, err := repo.DB.GetAllCounterMetricValues()
-	if err != nil {
-		return
-	}
-
-	data, err := json.MarshalIndent(repository.MapStorageRepo{
-		Gauge:   gaugeMetrics,
-		Counter: counterMetrics,
-	}, "", "  ")
-	if err != nil {
-		return
-	}
-
-	err = repo.App.FileStorage.Save(data)
-	if err != nil {
-		return
-	}
-}
-
 func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetMetricHandler")
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
+	log.Println(metricType, metricName)
 
 	if metricType == GaugeType {
 		value, err := repo.DB.GetGaugeMetricValue(metricName)
@@ -110,7 +88,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			http.Error(w, "Metric Not Found", http.StatusNotFound)
 			return
 		}
-
+		log.Println(value)
 		w.Write([]byte(fmt.Sprintf("%.3f", value)))
 		return
 	} else if metricType == CounterType {
@@ -119,7 +97,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			http.Error(w, "Metric Not Found", http.StatusNotFound)
 			return
 		}
-
+		log.Println(value)
 		w.Write([]byte(fmt.Sprintf("%d", value)))
 		return
 	} else {
@@ -160,6 +138,8 @@ func (repo *Repository) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("UpdateMetricJSONHandler")
+
 	var m models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -168,6 +148,8 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 	metricType := m.MType
 	metricName := m.ID
+
+	log.Println(m.MType, m.ID, m.Value, m.Delta)
 
 	if metricType == GaugeType {
 		metricValue := *m.Value
@@ -199,6 +181,8 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 }
 
 func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetMetricJSONHandler")
+
 	w.Header().Set("Content-Type", "application/json")
 
 	var m models.Metrics
@@ -219,6 +203,8 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 
 		m.Value = &value
 
+		log.Println(metricType, metricName, m.Value)
+
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
 			http.Error(w, "Metric Not Found", http.StatusNotFound)
@@ -235,6 +221,8 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 
 		m.Delta = &value
 
+		log.Println(metricType, metricName, m.Delta)
+
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
 			http.Error(w, "Metric Not Found", http.StatusNotFound)
@@ -248,6 +236,8 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
+	log.Println("ServeFileStorage")
+
 	if repo.App.Restore {
 		err := fileStorage.Retrieve()
 		if err != nil {
@@ -285,5 +275,31 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
 			log.Println(err)
 			return
 		}
+	}
+}
+
+func (repo *Repository) SaveMetrics() {
+	log.Println("SaveMetrics")
+	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
+	if err != nil {
+		return
+	}
+
+	counterMetrics, err := repo.DB.GetAllCounterMetricValues()
+	if err != nil {
+		return
+	}
+
+	data, err := json.MarshalIndent(repository.MapStorageRepo{
+		Gauge:   gaugeMetrics,
+		Counter: counterMetrics,
+	}, "", "  ")
+	if err != nil {
+		return
+	}
+
+	err = repo.App.FileStorage.Save(data)
+	if err != nil {
+		return
 	}
 }
