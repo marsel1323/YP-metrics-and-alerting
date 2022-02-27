@@ -71,16 +71,11 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if repo.App.StoreInterval == 0 {
-		log.Println("StoreInterval == 0")
-		repo.Jsonchik()
-	}
-
 	http.Error(w, "Unknown metric", http.StatusNotImplemented)
 }
 
-func (repo *Repository) Jsonchik() {
-	log.Println("Jsonchik")
+func (repo *Repository) SaveMetrics() {
+	log.Println("SaveMetrics")
 	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
 	if err != nil {
 		return
@@ -173,12 +168,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 	metricType := m.MType
 	metricName := m.ID
-
-	log.Println("StoreInterval", repo.App.StoreInterval)
-	if repo.App.StoreInterval == 0 {
-		log.Println("StoreInterval == 0")
-		repo.Jsonchik()
-	}
 
 	if metricType == GaugeType {
 		metricValue := *m.Value
