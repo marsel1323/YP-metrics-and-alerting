@@ -149,7 +149,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	metricType := m.MType
 	metricName := m.ID
 
-	log.Println(m.MType, m.ID, *m.Value, *m.Delta)
+	log.Println(m.MType, m.ID, m.Value, m.Delta)
 
 	if metricType == GaugeType {
 		metricValue := *m.Value
@@ -203,7 +203,7 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 
 		m.Value = &value
 
-		log.Println(metricType, metricName, *m.Value)
+		log.Println(metricType, metricName, m.Value)
 
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
@@ -221,7 +221,7 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 
 		m.Delta = &value
 
-		log.Println(metricType, metricName, *m.Delta)
+		log.Println(metricType, metricName, m.Delta)
 
 		err = json.NewEncoder(w).Encode(m)
 		if err != nil {
@@ -280,6 +280,7 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
 
 func (repo *Repository) SaveMetrics() {
 	log.Println("SaveMetrics")
+
 	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
 	if err != nil {
 		return
