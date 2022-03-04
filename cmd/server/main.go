@@ -63,16 +63,11 @@ func main() {
 }
 
 func handleSignals(repo *handlers.Repository) {
-	captureSignal := make(chan os.Signal, 1)
-	signal.Notify(captureSignal, syscall.SIGINT)
+	captureSignal := make(chan os.Signal)
+	signal.Notify(captureSignal, syscall.SIGINT, syscall.SIGTERM)
 	time.Sleep(1 * time.Second)
 
-	switch <-captureSignal {
-	case syscall.SIGINT:
-		repo.SaveMetrics()
-	default:
-		log.Println("unknown signal")
-	}
+	repo.SaveMetrics()
 
 	os.Exit(0)
 }

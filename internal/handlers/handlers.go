@@ -204,60 +204,63 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	metricType := m.MType
 	metricName := m.ID
 
 	log.Println(metricType, metricName)
 
 	if metricType == GaugeType {
-		value, err := repo.DB.GetGaugeMetricValue(metricName)
-		if err != nil {
-			log.Println(err)
-			//http.Error(w, err.Error(), http.StatusNotFound)
-			//return
-			//value = 0
-		}
-
-		m.Value = &value
-
-		if m.Value != nil {
-			log.Println(*m.Value)
-		}
-
-		err = json.NewEncoder(w).Encode(m)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		return
+		handleGaugeMetric(w, &m, repo)
 	} else if metricType == CounterType {
-		value, err := repo.DB.GetCounterMetricValue(metricName)
-		if err != nil {
-			log.Println(err)
-			//http.Error(w, err.Error(), http.StatusNotFound)
-			//return
-			//value = 0
-		}
-
-		m.Delta = &value
-		if m.Delta != nil {
-			log.Println(*m.Delta)
-		}
-
-		err = json.NewEncoder(w).Encode(m)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		return
+		handleCounterMetric(w, &m, repo)
 	} else {
 		log.Println("Metric Type Not Found")
 		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 	}
+}
+
+func handleCounterMetric(w http.ResponseWriter, m *models.Metrics, repo *Repository) {
+	value, err := repo.DB.GetCounterMetricValue(m.ID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	m.Delta = &value
+	if m.Delta != nil {
+		log.Println(*m.Delta)
+	}
+
+	err = json.NewEncoder(w).Encode(m)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	return
+}
+
+func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repository) {
+	value, err := repo.DB.GetGaugeMetricValue(m.ID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	m.Value = &value
+
+	if m.Value != nil {
+		log.Println(*m.Value)
+	}
+
+	err = json.NewEncoder(w).Encode(m)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	return
 }
 
 func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {

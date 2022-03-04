@@ -65,15 +65,18 @@ func main() {
 	flag.DurationVar(&cfg.PoolInterval, "p", pollInterval, "Pool of interval")
 	flag.Parse()
 
+	protocol := "http"
+	cfg.Address = fmt.Sprintf("%s://%s", protocol, cfg.Address)
+
 	metricsMap := NewMetricsMap()
 
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
-	go metricsMap.UpdateMetrics(cfg.PoolInterval)
+	go metricsMap.UpdateMetrics(cfg.PoolInterval, wg)
 
 	wg.Add(1)
-	go metricsMap.SendMetrics(cfg.Address, cfg.ReportInterval)
+	go metricsMap.SendMetrics(cfg.Address, cfg.ReportInterval, wg)
 
 	wg.Wait()
 }
@@ -84,10 +87,11 @@ func NewMetricsMap() MetricsMap {
 	return make(map[string]interface{})
 }
 
-func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Duration) {
-	for {
-		time.Sleep(interval)
+func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Duration, wg *sync.WaitGroup) {
+	defer wg.Done()
 
+	ticker := time.NewTicker(interval)
+	for range ticker.C {
 		log.Println("Sending metrics...")
 
 		for key, value := range metricsMap {
@@ -111,7 +115,7 @@ func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Durati
 				metric.Value = &metricValue
 			}
 
-			url := fmt.Sprintf("http://%s/update", serverHost)
+			url := fmt.Sprintf("%s/update", serverHost)
 
 			body, err := json.Marshal(metric)
 			if err != nil {
@@ -128,21 +132,23 @@ func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Durati
 			err = request.Body.Close()
 			if err != nil {
 				log.Println(err)
+				break
 			}
 		}
 	}
 
 }
 
-func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
+func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	var memStats runtime.MemStats
 	var pollCount int
 
 	rand.Seed(time.Now().Unix())
 
-	for {
-		time.Sleep(interval)
-
+	ticker := time.NewTicker(interval)
+	for range ticker.C {
 		log.Println("Updating metrics...")
 
 		pollCount++
@@ -152,7 +158,7 @@ func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
 		metricsMap[Alloc] = float64(memStats.Alloc)
 		metricsMap[BuckHashSys] = float64(memStats.BuckHashSys)
 		metricsMap[Frees] = float64(memStats.Frees)
-		metricsMap[GCCPUFraction] = (memStats.GCCPUFraction)
+		metricsMap[GCCPUFraction] = memStats.GCCPUFraction
 		metricsMap[GCSys] = float64(memStats.GCSys)
 		metricsMap[HeapAlloc] = float64(memStats.HeapAlloc)
 		metricsMap[HeapIdle] = float64(memStats.HeapIdle)
@@ -179,5 +185,4 @@ func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
 		metricsMap[PollCount] = int64(pollCount)
 		metricsMap[RandomValue] = float64(rand.Intn(10000))
 	}
-
 }
