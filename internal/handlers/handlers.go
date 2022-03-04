@@ -92,7 +92,11 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		log.Println(value)
-		w.Write([]byte(fmt.Sprintf("%.3f", value)))
+		_, err = w.Write([]byte(fmt.Sprintf("%.3f", value)))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		return
 	} else if metricType == CounterType {
 		value, err := repo.DB.GetCounterMetricValue(metricName)
@@ -101,14 +105,17 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		log.Println(value)
-		w.Write([]byte(fmt.Sprintf("%d", value)))
+		_, err = w.Write([]byte(fmt.Sprintf("%d", value)))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		return
-	} else {
-		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 	}
+	http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 }
 
-func (repo *Repository) GetAllMetricsHandler(w http.ResponseWriter, r *http.Request) {
+func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, _ *http.Request) {
 	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
 	if err != nil {
 		http.Error(w, "Invalid Value", http.StatusBadRequest)
@@ -137,7 +144,11 @@ func (repo *Repository) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	t.Execute(w, data)
+	err = t.Execute(w, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
@@ -339,8 +350,38 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+type ContentType []string
+
+var contentTypes ContentType
+
+func init() {
+	contentTypes = append(contentTypes, "application/javascript")
+	contentTypes = append(contentTypes, "application/json")
+	contentTypes = append(contentTypes, "text/css")
+	contentTypes = append(contentTypes, "text/html")
+	contentTypes = append(contentTypes, "text/plain")
+	contentTypes = append(contentTypes, "text/xml")
+}
+
+func (c *ContentType) Contains(value string) bool {
+	for _, ct := range contentTypes {
+		if strings.Contains(value, ct) {
+			return true
+		}
+	}
+	return false
+}
+
 func GzipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType := r.Header.Get("Content-Type")
+		log.Println(contentType)
+		log.Println(contentTypes.Contains(contentType))
+		if !contentTypes.Contains(contentType) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
 			return
@@ -348,7 +389,10 @@ func GzipHandle(next http.Handler) http.Handler {
 
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			io.WriteString(w, err.Error())
+			_, err = io.WriteString(w, err.Error())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 		defer gz.Close()
