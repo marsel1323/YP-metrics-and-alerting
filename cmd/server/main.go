@@ -63,7 +63,7 @@ func main() {
 }
 
 func handleSignals(repo *handlers.Repository) {
-	captureSignal := make(chan os.Signal)
+	captureSignal := make(chan os.Signal, 1)
 	signal.Notify(captureSignal, syscall.SIGINT, syscall.SIGTERM)
 	time.Sleep(1 * time.Second)
 
