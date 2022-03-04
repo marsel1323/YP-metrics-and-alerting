@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-var pathToTemplates = "../../internal/templates"
+var pathToTemplates = "./internal/templates"
 
 var app *config.Application
 
@@ -29,19 +29,19 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 	log.Println(pages)
 	for _, page := range pages {
 		name := filepath.Base(page)
-
+		log.Println(name)
 		ts, err := template.ParseFiles(page)
 		if err != nil {
 			return myCache, err
 		}
-
+		log.Println(ts)
 		myCache[name] = ts
 	}
 	return myCache, nil
 }
 
-func Template(w http.ResponseWriter, r *http.Request, tmpl string, td interface{}) error {
-	var tc map[string]*template.Template = app.TemplateCache
+func Template(w http.ResponseWriter, _ *http.Request, tmpl string, td interface{}) error {
+	var tc = app.TemplateCache
 
 	t, ok := tc[tmpl]
 	if !ok {
