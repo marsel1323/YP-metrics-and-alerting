@@ -380,13 +380,13 @@ func (c *ContentType) Contains(value string) bool {
 
 func GzipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentType := r.Header.Get("Content-Type")
-		log.Println(contentType)
-		log.Println(contentTypes.Contains(contentType))
-		if !contentTypes.Contains(contentType) {
-			next.ServeHTTP(w, r)
-			return
-		}
+		//contentType := r.Header.Get("Content-Type")
+		//log.Println(contentType)
+		//log.Println(contentTypes.Contains(contentType))
+		//if !contentTypes.Contains(contentType) {
+		//	next.ServeHTTP(w, r)
+		//	return
+		//}
 
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
