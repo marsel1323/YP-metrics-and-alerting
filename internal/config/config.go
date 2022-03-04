@@ -2,6 +2,7 @@ package config
 
 import (
 	"YP-metrics-and-alerting/internal/storage"
+	"html/template"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type ServerConfig struct {
 }
 
 type Application struct {
-	Config      ServerConfig
-	FileStorage storage.Storage
+	Config        ServerConfig
+	FileStorage   storage.Storage
+	TemplateCache map[string]*template.Template
 }

@@ -4,6 +4,7 @@ import (
 	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/handlers"
 	"YP-metrics-and-alerting/internal/helpers"
+	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
 	"flag"
@@ -42,11 +43,19 @@ func main() {
 		Config: cfg,
 	}
 
+	tc, err := render.CreateTemplateCache()
+	if err != nil {
+		log.Fatal("Cannot create template cache")
+		return
+	}
+
+	app.TemplateCache = tc
+
 	mapStorage := repository.NewMapStorageRepo()
+	fileStorage := storage.NewFileStorage(app.Config.StoreFile)
 
 	repo := handlers.NewRepo(app, mapStorage)
-
-	fileStorage := storage.NewFileStorage(repo.App.Config.StoreFile)
+	render.NewRenderer(app)
 
 	app.FileStorage = fileStorage
 

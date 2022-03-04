@@ -3,13 +3,13 @@ package handlers
 import (
 	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/models"
+	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -115,7 +115,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 	http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 }
 
-func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, _ *http.Request) {
+func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Request) {
 	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
 	if err != nil {
 		http.Error(w, "Invalid Value", http.StatusBadRequest)
@@ -138,13 +138,19 @@ func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, _ *http.Reques
 		CounterMetrics: counterMetrics,
 	}
 
-	t, err := template.ParseFiles("../../internal/templates/metrics.gohtml")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	//t, err := template.ParseFiles("../../internal/templates/metrics.gohtml")
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//err = t.Execute(w, data)
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
 
-	err = t.Execute(w, data)
+	err = render.Template(w, r, "metrics.gohtml", data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
