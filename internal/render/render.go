@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"path/filepath"
 )
@@ -21,20 +20,20 @@ func NewRenderer(appConfig *config.Application) {
 
 func CreateTemplateCache() (map[string]*template.Template, error) {
 	myCache := map[string]*template.Template{}
-	log.Println(fmt.Sprintf("%s/*.gohtml", pathToTemplates))
+
 	pages, err := filepath.Glob(fmt.Sprintf("%s/*.gohtml", pathToTemplates))
 	if err != nil {
 		return myCache, err
 	}
-	log.Println(pages)
+
 	for _, page := range pages {
 		name := filepath.Base(page)
-		log.Println(name)
+
 		ts, err := template.ParseFiles(page)
 		if err != nil {
 			return myCache, err
 		}
-		log.Println(ts)
+
 		myCache[name] = ts
 	}
 	return myCache, nil

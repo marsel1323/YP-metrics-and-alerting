@@ -116,6 +116,8 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
 	gaugeMetrics, err := repo.DB.GetAllGaugeMetricValues()
 	if err != nil {
 		http.Error(w, "Invalid Value", http.StatusBadRequest)
