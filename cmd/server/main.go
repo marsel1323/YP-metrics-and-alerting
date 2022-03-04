@@ -44,7 +44,7 @@ func main() {
 		Config: cfg,
 	}
 
-	t, err := template.ParseFiles("../internal/templates/metrics.gohtml")
+	t, err := template.ParseFiles("./internal/templates/metrics.gohtml")
 	if err != nil {
 		log.Fatal(err)
 		return
