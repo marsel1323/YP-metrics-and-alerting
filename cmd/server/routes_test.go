@@ -2,6 +2,8 @@ package main
 
 import (
 	"YP-metrics-and-alerting/internal/config"
+	"YP-metrics-and-alerting/internal/handlers"
+	"YP-metrics-and-alerting/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -12,8 +14,10 @@ import (
 
 func TestRoutes(t *testing.T) {
 	app := &config.Application{}
+	mapStorage := repository.NewMapStorageRepo()
+	repo := handlers.NewRepo(app, mapStorage)
 
-	r := Routes(app)
+	r := Routes(repo)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
