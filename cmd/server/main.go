@@ -56,7 +56,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    app.Config.Address,
-		Handler: Routes(repo),
+		Handler: handlers.GzipHandle(Routes(repo)),
 	}
 	log.Println("Server is serving on", server.Addr)
 	log.Fatal(server.ListenAndServe())
@@ -67,7 +67,13 @@ func handleSignals(repo *handlers.Repository) {
 	signal.Notify(captureSignal, syscall.SIGINT, syscall.SIGTERM)
 	time.Sleep(1 * time.Second)
 
-	repo.SaveMetrics()
+	switch <-captureSignal {
+	case syscall.SIGINT:
+	case syscall.SIGTERM:
+		repo.SaveMetrics()
+	default:
+		log.Println("unknown signal")
+	}
 
 	os.Exit(0)
 }

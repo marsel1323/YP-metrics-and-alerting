@@ -5,13 +5,16 @@ import (
 	"YP-metrics-and-alerting/internal/models"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -227,9 +230,6 @@ func handleCounterMetric(w http.ResponseWriter, m *models.Metrics, repo *Reposit
 	}
 
 	m.Delta = &value
-	if m.Delta != nil {
-		log.Println(*m.Delta)
-	}
 
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {
@@ -237,8 +237,6 @@ func handleCounterMetric(w http.ResponseWriter, m *models.Metrics, repo *Reposit
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
-	return
 }
 
 func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repository) {
@@ -249,18 +247,12 @@ func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repositor
 
 	m.Value = &value
 
-	if m.Value != nil {
-		log.Println(*m.Value)
-	}
-
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
-	return
 }
 
 func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
@@ -336,4 +328,32 @@ func (repo *Repository) SaveMetrics() {
 	if err != nil {
 		return
 	}
+}
+
+type gzipWriter struct {
+	http.ResponseWriter
+	Writer io.Writer
+}
+
+func (w gzipWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func GzipHandle(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		defer gz.Close()
+
+		w.Header().Set("Content-Encoding", "gzip")
+		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+	})
 }
