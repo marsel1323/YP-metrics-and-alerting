@@ -8,6 +8,7 @@ import (
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -42,6 +43,13 @@ func main() {
 	app := &config.Application{
 		Config: cfg,
 	}
+
+	t, err := template.ParseFiles("../internal/templates/metrics.gohtml")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	log.Println(t)
 
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
