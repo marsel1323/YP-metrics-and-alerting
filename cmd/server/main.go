@@ -22,6 +22,7 @@ func main() {
 	storeIntervalFlag := flag.String("i", "300s", "Interval of store to file")
 	storeFileFlag := flag.String("f", "/tmp/devops-metrics-db.json", "Save metrics to file")
 	restoreFlag := flag.String("r", "true", "Restore from file")
+	keyFlag := flag.String("k", "", "Hashing key")
 	flag.Parse()
 
 	serverAddress := helpers.GetEnv("ADDRESS", *serverAddressFlag)
@@ -31,13 +32,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	key := helpers.GetEnv("KEY", *keyFlag)
 
 	cfg := config.ServerConfig{
 		Address:       serverAddress,
 		StoreFile:     storeFile,
 		Restore:       restore,
 		StoreInterval: storeInterval,
+		Key:           key,
 	}
+	log.Println(cfg)
 
 	app := &config.Application{
 		Config: cfg,
@@ -51,10 +55,10 @@ func main() {
 
 	app.TemplateCache = tc
 
-	mapStorage := repository.NewMapStorageRepo()
-	fileStorage := storage.NewFileStorage(app.Config.StoreFile)
+	var dbStorage repository.DBRepo = repository.NewMapStorageRepo()
+	var fileStorage storage.FileStorage = storage.NewJSONFileStorage(app.Config.StoreFile)
 
-	repo := handlers.NewRepo(app, mapStorage)
+	repo := handlers.NewRepo(app, dbStorage)
 	render.NewRenderer(app)
 
 	app.FileStorage = fileStorage

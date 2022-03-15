@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"YP-metrics-and-alerting/internal/config"
+	"YP-metrics-and-alerting/internal/helpers"
 	"YP-metrics-and-alerting/internal/models"
 	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
 	"compress/gzip"
+	"crypto/hmac"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -25,10 +27,10 @@ const (
 
 type Repository struct {
 	App *config.Application
-	DB  repository.StorageRepo
+	DB  repository.DBRepo
 }
 
-func NewRepo(appConfig *config.Application, db repository.StorageRepo) *Repository {
+func NewRepo(appConfig *config.Application, db repository.DBRepo) *Repository {
 	return &Repository{
 		App: appConfig,
 		DB:  db,
@@ -140,18 +142,6 @@ func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Reques
 		CounterMetrics: counterMetrics,
 	}
 
-	//t, err := template.ParseFiles("../../internal/templates/metrics.gohtml")
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//err = t.Execute(w, data)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-
 	err = render.Template(w, r, "metrics.gohtml", data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -162,22 +152,53 @@ func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Reques
 func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("UpdateMetricJSONHandler")
 
-	var m models.Metrics
+	var metric models.Metrics
 
-	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	metricType := m.MType
-	metricName := m.ID
+	metricType := metric.MType
+	metricName := metric.ID
+	key := repo.App.Config.Key
 
-	log.Println(m.MType, m.ID)
-	if m.Value != nil {
-		log.Println("m.Value", *m.Value)
+	if key != "" {
+		if metricType == CounterType {
+			hash := helpers.Hash(
+				fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
+				key,
+			)
+			log.Println(hash)
+			log.Println(metric.Hash)
+			log.Println([]byte(hash))
+			log.Println([]byte(metric.Hash))
+			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
+				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
+				return
+			}
+		} else if metricType == GaugeType {
+			hash := helpers.Hash(
+				fmt.Sprintf("%s:counter:%f", metric.ID, *metric.Value),
+				key,
+			)
+			log.Println(hash)
+			log.Println(metric.Hash)
+			log.Println([]byte(hash))
+			log.Println([]byte(metric.Hash))
+			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
+				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
+				return
+			}
+		}
 	}
 
-	if m.Delta != nil {
-		log.Println("m.Delta", *m.Delta)
+	log.Println(metric.MType, metric.ID)
+	if metric.Value != nil {
+		log.Println("m.Value", *metric.Value)
+	}
+
+	if metric.Delta != nil {
+		log.Println("m.Delta", *metric.Delta)
 	}
 
 	if repo.App.Config.StoreInterval == 0 {
@@ -186,7 +207,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 
 	if metricType == GaugeType {
-		metricValue := *m.Value
+		metricValue := *metric.Value
 
 		err := repo.DB.SetGaugeMetricValue(metricName, metricValue)
 		if err != nil {
@@ -199,7 +220,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 
 	if metricType == CounterType {
-		metricValue := *m.Delta
+		metricValue := *metric.Delta
 
 		err := repo.DB.SetCounterMetricValue(metricName, metricValue)
 		if err != nil {
@@ -219,23 +240,41 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 
-	var m models.Metrics
+	var metric models.Metrics
 
-	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	metricType := m.MType
-	metricName := m.ID
+	metricType := metric.MType
+	metricName := metric.ID
 
 	log.Println(metricType, metricName)
 
+	key := repo.App.Config.Key
+
+	if key != "" {
+		var hash string
+		if metricType == CounterType {
+			hash = helpers.Hash(
+				fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
+				key,
+			)
+		} else if metricType == GaugeType {
+			hash = helpers.Hash(
+				fmt.Sprintf("%s:counter:%f", metric.ID, *metric.Value),
+				key,
+			)
+		}
+		metric.Hash = hash
+	}
+
 	if metricType == GaugeType {
-		handleGaugeMetric(w, &m, repo)
+		handleGaugeMetric(w, &metric, repo)
 	} else if metricType == CounterType {
-		handleCounterMetric(w, &m, repo)
+		handleCounterMetric(w, &metric, repo)
 	} else {
 		log.Println("Metric Type Not Found")
 		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
@@ -274,7 +313,7 @@ func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repositor
 	}
 }
 
-func (repo *Repository) ServeFileStorage(fileStorage storage.Storage) {
+func (repo *Repository) ServeFileStorage(fileStorage storage.FileStorage) {
 	log.Println("ServeFileStorage")
 
 	if repo.App.Config.Restore {

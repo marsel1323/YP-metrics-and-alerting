@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 )
 
-var pathToTemplates = "./internal/templates"
+var pathToTemplates = "./web/template"
 
 var app *config.Application
 

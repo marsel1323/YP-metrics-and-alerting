@@ -54,19 +54,23 @@ const (
 )
 
 func main() {
-	cfg := config.AgentConfig{}
+	cfg := &config.AgentConfig{}
 
 	serverHost := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
 	reportInterval := helpers.StringToSeconds(helpers.GetEnv("REPORT_INTERVAL", "10s"))
 	pollInterval := helpers.StringToSeconds(helpers.GetEnv("POLL_INTERVAL", "2s"))
+	key := helpers.GetEnv("KEY", "secretkey")
 
 	flag.StringVar(&cfg.Address, "a", serverHost, "Send metrics to address:port")
 	flag.DurationVar(&cfg.ReportInterval, "r", reportInterval, "Report of interval")
 	flag.DurationVar(&cfg.PoolInterval, "p", pollInterval, "Pool of interval")
+	flag.StringVar(&cfg.Key, "k", key, "Hashing key")
 	flag.Parse()
 
 	protocol := "http"
 	cfg.Address = fmt.Sprintf("%s://%s", protocol, cfg.Address)
+
+	log.Println(cfg)
 
 	metricsMap := NewMetricsMap()
 
@@ -76,7 +80,7 @@ func main() {
 	go metricsMap.UpdateMetrics(cfg.PoolInterval, wg)
 
 	wg.Add(1)
-	go metricsMap.SendMetrics(cfg.Address, cfg.ReportInterval, wg)
+	go metricsMap.SendMetrics(cfg, wg)
 
 	wg.Wait()
 }
@@ -87,16 +91,18 @@ func NewMetricsMap() MetricsMap {
 	return make(map[string]interface{})
 }
 
-func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Duration, wg *sync.WaitGroup) {
+func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	serverHost := cfg.Address
+	interval := cfg.ReportInterval
+	key := cfg.Key
 
 	ticker := time.NewTicker(interval)
 	for range ticker.C {
 		log.Println("Sending metrics...")
 
-		for key, value := range metricsMap {
-			metricName := key
-
+		for metricName, value := range metricsMap {
 			metricType := GaugeMetricType
 			if metricName == PollCount {
 				metricType = CounterMetricType
@@ -115,6 +121,20 @@ func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Durati
 				metric.Value = &metricValue
 			}
 
+			if key != "" {
+				if metricType == CounterMetricType {
+					metric.Hash = helpers.Hash(
+						fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
+						key,
+					)
+				} else if metricType == GaugeMetricType {
+					metric.Hash = helpers.Hash(
+						fmt.Sprintf("%s:counter:%f", metric.ID, *metric.Value),
+						key,
+					)
+				}
+			}
+			log.Println(metric.Hash)
 			url := fmt.Sprintf("%s/update", serverHost)
 
 			body, err := json.Marshal(metric)
