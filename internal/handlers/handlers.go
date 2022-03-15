@@ -172,6 +172,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 			log.Println(metric.Hash)
 			log.Println([]byte(hash))
 			log.Println([]byte(metric.Hash))
+			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
 			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
 				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
 				return
@@ -185,6 +186,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 			log.Println(metric.Hash)
 			log.Println([]byte(hash))
 			log.Println([]byte(metric.Hash))
+			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
 			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
 				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
 				return
@@ -253,24 +255,6 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 
 	log.Println(metricType, metricName)
 
-	key := repo.App.Config.Key
-
-	if key != "" {
-		var hash string
-		if metricType == CounterType {
-			hash = helpers.Hash(
-				fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
-				key,
-			)
-		} else if metricType == GaugeType {
-			hash = helpers.Hash(
-				fmt.Sprintf("%s:counter:%f", metric.ID, *metric.Value),
-				key,
-			)
-		}
-		metric.Hash = hash
-	}
-
 	if metricType == GaugeType {
 		handleGaugeMetric(w, &metric, repo)
 	} else if metricType == CounterType {
@@ -289,6 +273,13 @@ func handleCounterMetric(w http.ResponseWriter, m *models.Metrics, repo *Reposit
 
 	m.Delta = &value
 
+	if key := repo.App.Config.Key; key != "" {
+		m.Hash = helpers.Hash(
+			fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta),
+			key,
+		)
+	}
+
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {
 		log.Println(err)
@@ -304,6 +295,13 @@ func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repositor
 	}
 
 	m.Value = &value
+
+	if key := repo.App.Config.Key; key != "" {
+		m.Hash = helpers.Hash(
+			fmt.Sprintf("%s:s:gauge:%f", m.ID, *m.Value),
+			key,
+		)
+	}
 
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {

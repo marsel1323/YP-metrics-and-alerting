@@ -134,7 +134,7 @@ func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitG
 					)
 				}
 			}
-			log.Println(metric.Hash)
+			log.Printf("%+v\n", metric)
 			url := fmt.Sprintf("%s/update", serverHost)
 
 			body, err := json.Marshal(metric)
@@ -142,7 +142,6 @@ func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitG
 				log.Println(err)
 				return
 			}
-
 			request, err := http.Post(url, "application/json", bytes.NewReader(body))
 			if err != nil {
 				log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
