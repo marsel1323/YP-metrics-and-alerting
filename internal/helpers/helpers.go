@@ -27,7 +27,8 @@ func StringToSeconds(value string) time.Duration {
 }
 
 func Hash(src string, key string) string {
-	h := hmac.New(sha256.New, []byte(key))
+	//h := hmac.New(sha256.New, []byte(key))
+	h := sha256.New()
 	h.Write([]byte(src))
 	dst := h.Sum(nil)
 	return hex.EncodeToString(dst)

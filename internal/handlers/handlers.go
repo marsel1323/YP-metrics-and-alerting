@@ -177,7 +177,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 			}
 		} else if metricType == GaugeType {
 			hash := helpers.Hash(
-				fmt.Sprintf("%s:counter:%f", metric.ID, *metric.Value),
+				fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value),
 				key,
 			)
 			log.Println(hash)
