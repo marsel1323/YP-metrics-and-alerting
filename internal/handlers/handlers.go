@@ -273,10 +273,9 @@ func handleCounterMetric(w http.ResponseWriter, m *models.Metrics, repo *Reposit
 	m.Delta = &value
 
 	if key := repo.App.Config.Key; key != "" {
-		m.Hash = helpers.Hash(
-			fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta),
-			key,
-		)
+		str := fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+		log.Println(str)
+		m.Hash = helpers.Hash(str, key)
 	}
 	log.Printf("%+v\n", m)
 
@@ -297,10 +296,9 @@ func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repositor
 	m.Value = &value
 
 	if key := repo.App.Config.Key; key != "" {
-		m.Hash = helpers.Hash(
-			fmt.Sprintf("%s:s:gauge:%f", m.ID, *m.Value),
-			key,
-		)
+		str := fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
+		log.Println(str)
+		m.Hash = helpers.Hash(str, key)
 	}
 	log.Printf("%+v\n", m)
 
