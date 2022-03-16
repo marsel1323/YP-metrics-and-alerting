@@ -36,10 +36,6 @@ func main() {
 	key := helpers.GetEnv("KEY", *keyFlag)
 	dbDsn := helpers.GetEnv("DATABASE_DSN", *dbDsnFlag)
 
-	if dbDsn != "" {
-		storeFile = ""
-	}
-
 	cfg := config.ServerConfig{
 		Address:       serverAddress,
 		StoreFile:     storeFile,
