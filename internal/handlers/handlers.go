@@ -170,8 +170,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 			)
 			log.Println(hash)
 			log.Println(metric.Hash)
-			log.Println([]byte(hash))
-			log.Println([]byte(metric.Hash))
 			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
 			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
 				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
@@ -184,8 +182,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 			)
 			log.Println(hash)
 			log.Println(metric.Hash)
-			log.Println([]byte(hash))
-			log.Println([]byte(metric.Hash))
 			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
 			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
 				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)

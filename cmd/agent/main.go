@@ -129,7 +129,7 @@ func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitG
 					)
 				} else if metricType == GaugeMetricType {
 					metric.Hash = helpers.Hash(
-						fmt.Sprintf("%s:counter:%f", metric.ID, *metric.Value),
+						fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value),
 						key,
 					)
 				}
