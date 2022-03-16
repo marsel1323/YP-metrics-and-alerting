@@ -278,6 +278,7 @@ func handleCounterMetric(w http.ResponseWriter, m *models.Metrics, repo *Reposit
 			key,
 		)
 	}
+	log.Printf("%+v\n", m)
 
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {
@@ -301,6 +302,7 @@ func handleGaugeMetric(w http.ResponseWriter, m *models.Metrics, repo *Repositor
 			key,
 		)
 	}
+	log.Printf("%+v\n", m)
 
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {

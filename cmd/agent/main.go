@@ -74,6 +74,8 @@ func main() {
 
 	metricsMap := NewMetricsMap()
 
+	time.Sleep(5 * time.Second)
+
 	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
