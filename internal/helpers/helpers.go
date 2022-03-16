@@ -3,7 +3,6 @@ package helpers
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"log"
 	"os"
@@ -31,7 +30,7 @@ func Hash(src string, key string) string {
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write([]byte(src))
 	dst := h.Sum(nil)
-	return base64.StdEncoding.EncodeToString(dst)
+	return hex.EncodeToString(dst)
 }
 
 func Compare(str string, key string) error {
