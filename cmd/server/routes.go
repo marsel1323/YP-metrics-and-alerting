@@ -17,6 +17,7 @@ func Routes(repo *handlers.Repository) *chi.Mux {
 	mux.Post("/update/", repo.UpdateMetricJSONHandler)
 	mux.Post("/value", repo.GetMetricJSONHandler)
 	mux.Post("/value/", repo.GetMetricJSONHandler)
+	mux.Get("/ping*", repo.PingDB)
 
 	return mux
 }

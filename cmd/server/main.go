@@ -23,6 +23,7 @@ func main() {
 	storeFileFlag := flag.String("f", "/tmp/devops-metrics-db.json", "Save metrics to file")
 	restoreFlag := flag.String("r", "true", "Restore from file")
 	keyFlag := flag.String("k", "", "Hashing key")
+	dbDsnFlag := flag.String("d", "", "Database DSN")
 	flag.Parse()
 
 	serverAddress := helpers.GetEnv("ADDRESS", *serverAddressFlag)
@@ -33,6 +34,11 @@ func main() {
 		log.Fatal(err)
 	}
 	key := helpers.GetEnv("KEY", *keyFlag)
+	dbDsn := helpers.GetEnv("DATABASE_DSN", *dbDsnFlag)
+
+	if dbDsn != "" {
+		storeFile = ""
+	}
 
 	cfg := config.ServerConfig{
 		Address:       serverAddress,
@@ -40,6 +46,7 @@ func main() {
 		Restore:       restore,
 		StoreInterval: storeInterval,
 		Key:           key,
+		DSN:           dbDsn,
 	}
 	log.Println(cfg)
 

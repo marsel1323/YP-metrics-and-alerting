@@ -19,6 +19,7 @@ type ServerConfig struct {
 	Restore       bool
 	StoreInterval time.Duration
 	Key           string
+	DSN           string
 }
 
 type Application struct {

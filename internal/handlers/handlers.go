@@ -9,9 +9,11 @@ import (
 	"YP-metrics-and-alerting/internal/storage"
 	"compress/gzip"
 	"crypto/hmac"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"io"
 	"log"
 	"net/http"
@@ -383,6 +385,26 @@ func (repo *Repository) SaveMetrics() {
 	if err != nil {
 		return
 	}
+}
+
+func (repo *Repository) PingDB(w http.ResponseWriter, r *http.Request) {
+	dsn := repo.App.Config.DSN
+	db, err := sql.Open("pgx", dsn)
+	defer db.Close()
+
+	if err != nil {
+		log.Printf("Unable to connect to database: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = db.Ping(); err != nil {
+		log.Printf("Unable to ping database: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 type gzipWriter struct {
