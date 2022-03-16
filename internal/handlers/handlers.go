@@ -160,35 +160,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 	metricType := metric.MType
 	metricName := metric.ID
-	key := repo.App.Config.Key
-
-	if key != "" {
-		if metricType == CounterType {
-			hash := helpers.Hash(
-				fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
-				key,
-			)
-			log.Println(hash)
-			log.Println(metric.Hash)
-			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
-			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
-				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
-				return
-			}
-		} else if metricType == GaugeType {
-			hash := helpers.Hash(
-				fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value),
-				key,
-			)
-			log.Println(hash)
-			log.Println(metric.Hash)
-			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
-			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
-				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
-				return
-			}
-		}
-	}
 
 	log.Println(metric.MType, metric.ID)
 	if metric.Value != nil {
@@ -228,6 +199,38 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 
 		w.WriteHeader(http.StatusOK)
 		return
+	}
+
+	key := repo.App.Config.Key
+
+	if key != "" {
+		if metricType == CounterType {
+			hash := helpers.Hash(
+				fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
+				key,
+			)
+			log.Println(hash)
+			log.Println(metric.Hash)
+			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
+			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
+				log.Println("Hashes are not equal!")
+				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
+				return
+			}
+		} else if metricType == GaugeType {
+			hash := helpers.Hash(
+				fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value),
+				key,
+			)
+			log.Println(hash)
+			log.Println(metric.Hash)
+			log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
+			if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
+				log.Println("Hashes are not equal!")
+				http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
+				return
+			}
+		}
 	}
 
 	http.Error(w, "Unknown metric", http.StatusNotImplemented)

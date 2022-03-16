@@ -123,15 +123,15 @@ func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitG
 
 			if key != "" {
 				if metricType == CounterMetricType {
-					metric.Hash = helpers.Hash(
-						fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta),
-						key,
-					)
-				} else if metricType == GaugeMetricType {
-					metric.Hash = helpers.Hash(
-						fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value),
-						key,
-					)
+					src := fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta)
+					log.Println(src)
+					metric.Hash = helpers.Hash(src, key)
+				}
+
+				if metricType == GaugeMetricType {
+					src := fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value)
+					log.Println(src)
+					metric.Hash = helpers.Hash(src, key)
 				}
 			}
 			log.Printf("%+v\n", metric)
