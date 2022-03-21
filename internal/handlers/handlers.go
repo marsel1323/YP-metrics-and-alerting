@@ -152,19 +152,16 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println(metric.MType, metric.ID)
 
+	log.Printf("%+v\n", metric)
 	if metric.Value != nil {
-		log.Println("m.Value", *metric.Value)
+		log.Println("Value:", *metric.Value)
 	}
-
 	if metric.Delta != nil {
-		log.Println("m.Delta", *metric.Delta)
+		log.Println("Delta:", *metric.Delta)
 	}
 
-	key := repo.App.Config.Key
-
-	if key != "" {
+	if key := repo.App.Config.Key; key != "" {
 		var str string
 		if metric.MType == models.CounterType {
 			str = fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta)
@@ -230,6 +227,12 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	log.Printf("%+v\n", metric)
+	if metric.Value != nil {
+		log.Println("Value:", *metric.Value)
+	}
+	if metric.Delta != nil {
+		log.Println("Delta:", *metric.Delta)
+	}
 
 	err = json.NewEncoder(w).Encode(metric)
 	if err != nil {
