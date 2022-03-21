@@ -103,14 +103,27 @@ func (postgres PostgresStorage) GetMetricsList() ([]*models.Metrics, error) {
 }
 
 func (postgres PostgresStorage) SetMetricsList(metricsList []*models.Metrics) error {
-	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	for _, metric := range metricsList {
-		err := postgres.SetMetric(metric)
+		_, err := postgres.DB.ExecContext(
+			ctx,
+			`
+				INSERT INTO metrics (id, type, delta, value) 
+				VALUES ($1, $2, $3, $4)
+				ON CONFLICT (id)
+				DO UPDATE SET delta = $3, value = $4;
+			`,
+			metric.ID,
+			metric.MType,
+			metric.Delta,
+			metric.Value,
+		)
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 	return nil
 }
