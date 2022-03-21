@@ -66,10 +66,10 @@ func main() {
 		if err != nil {
 			log.Println(err.Error())
 		}
+		dbStorage = repository.NewPostgresStorage(db)
 	} else {
 		dbStorage = repository.NewMapStorageRepo()
 	}
-	dbStorage = repository.NewPostgresStorage(db)
 
 	repo := handlers.NewRepo(app, dbStorage)
 
