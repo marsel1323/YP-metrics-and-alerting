@@ -214,6 +214,8 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 	metric, err := repo.DB.GetMetric(metric.ID)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
 	if key := repo.App.Config.Key; key != "" {
@@ -232,7 +234,7 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 	err = json.NewEncoder(w).Encode(metric)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
