@@ -24,8 +24,8 @@ func (postgres PostgresStorage) GetMetric(id string) (*models.Metrics, error) {
 
 	row := postgres.DB.QueryRowContext(
 		ctx,
-		`SELECT id, type, delta, value from metrics WHERE id = @id`,
-		sql.Named("id", id),
+		`SELECT id, type, delta, value from metrics WHERE id = $1`,
+		id,
 	)
 
 	if err := row.Err(); err != nil {
