@@ -12,7 +12,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"io"
 	"log"
@@ -203,17 +203,18 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 	var metric *models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
-		log.Println(err)
+		log.Println("Decode err:", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	metric, err := repo.DB.GetMetric(metric.ID)
 	if err != nil {
-		log.Println(err)
+		log.Println("GetMetric error:", err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	log.Printf("%+v\n", metric)
 
 	if key := repo.App.Config.Key; key != "" {
 		var str string
@@ -224,6 +225,7 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 		}
 		log.Println(str)
 		metric.Hash = helpers.Hash(str, key)
+		log.Println("Hash:", metric.Hash)
 	}
 
 	log.Printf("%+v\n", metric)
