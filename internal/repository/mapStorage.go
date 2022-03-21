@@ -35,7 +35,7 @@ func (m MapStorageRepo) SetMetric(metric *models.Metrics) error {
 			sum := *foundMetric.Delta + *metric.Delta
 			foundMetric.Delta = &sum
 		} else if metric.MType == models.GaugeType {
-			foundMetric = metric
+			foundMetric.Value = metric.Value
 		}
 	} else {
 		m[metric.ID] = metric

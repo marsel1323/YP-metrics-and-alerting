@@ -31,6 +31,16 @@ func TestRoutes(t *testing.T) {
 	assert.Equal(t, "123.000", body)
 	resp.Body.Close()
 
+	resp, body = testRequest(t, ts, "POST", "/update/gauge/Alloc/456.000000")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "", body)
+	resp.Body.Close()
+
+	resp, body = testRequest(t, ts, "GET", "/value/gauge/Alloc")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "456.000", body)
+	resp.Body.Close()
+
 	resp, body = testRequest(t, ts, "POST", "/update/counter/testCounter/123")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "", body)

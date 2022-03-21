@@ -36,6 +36,7 @@ func NewRepo(appConfig *config.Application, db repository.DBRepo) *Repository {
 
 func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("UpdateMetricHandler")
+
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	metricValue := chi.URLParam(r, "metricValue")
@@ -91,9 +92,10 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Metric Not Found", http.StatusNotFound)
 		return
 	}
-	log.Println(metric)
+	log.Printf("%+v\n", metric)
 
-	if metricType == models.GaugeType {
+	if metric.MType == models.GaugeType {
+		log.Println(*metric.Value)
 		_, err = w.Write([]byte(fmt.Sprintf("%.3f", *metric.Value)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -102,7 +104,8 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 
 		return
 
-	} else if metricType == models.CounterType {
+	} else if metric.MType == models.CounterType {
+		log.Println(*metric.Delta)
 		_, err = w.Write([]byte(fmt.Sprintf("%d", *metric.Delta)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
