@@ -223,7 +223,7 @@ func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Requ
 			str = fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta)
 		}
 		log.Println(str)
-		//m.Hash = helpers.Hash(str, key)
+		metric.Hash = helpers.Hash(str, key)
 	}
 
 	log.Printf("%+v\n", metric)
