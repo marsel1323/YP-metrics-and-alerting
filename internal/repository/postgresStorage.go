@@ -4,6 +4,7 @@ import (
 	"YP-metrics-and-alerting/internal/models"
 	"context"
 	"database/sql"
+	"log"
 	"time"
 )
 
@@ -23,8 +24,8 @@ func (postgres PostgresStorage) GetMetric(id string) (*models.Metrics, error) {
 
 	row := postgres.DB.QueryRowContext(
 		ctx,
-		`SELECT id, type, delta, value from metrics WHERE id = $1`,
-		id,
+		`SELECT id, type, delta, value from metrics WHERE id = @id`,
+		sql.Named("id", id),
 	)
 
 	if err := row.Err(); err != nil {
@@ -103,27 +104,73 @@ func (postgres PostgresStorage) GetMetricsList() ([]*models.Metrics, error) {
 }
 
 func (postgres PostgresStorage) SetMetricsList(metricsList []*models.Metrics) error {
+	log.Println("SetMetricsList")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	for _, metric := range metricsList {
-		_, err := postgres.DB.ExecContext(
-			ctx,
-			`
-				INSERT INTO metrics (id, type, delta, value) 
+	tx, err := postgres.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := postgres.DB.PrepareContext(ctx, `
+				INSERT INTO metrics (id, type, delta, value)
 				VALUES ($1, $2, $3, $4)
 				ON CONFLICT (id)
-				DO UPDATE SET delta = $3, value = $4;
-			`,
+				DO UPDATE SET delta = metrics.delta + $3, value = $4;
+			`)
+	if err != nil {
+		return err
+	}
+
+	for _, metric := range metricsList {
+		if _, err := stmt.ExecContext(
+			ctx,
 			metric.ID,
 			metric.MType,
 			metric.Delta,
 			metric.Value,
-		)
-		if err != nil {
+		); err != nil {
 			return err
 		}
-		return nil
 	}
-	return nil
+
+	return tx.Commit()
+}
+
+func (postgres PostgresStorage) SetMetricsListFromFile(metricsList []*models.Metrics) error {
+	log.Println("SetMetricsListFromFile")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := postgres.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := postgres.DB.PrepareContext(ctx, `
+				INSERT INTO metrics (id, type, delta, value)
+				VALUES ($1, $2, $3, $4)
+				ON CONFLICT (id)
+				DO UPDATE SET delta = $3, value = $4;
+			`)
+	if err != nil {
+		return err
+	}
+
+	for _, metric := range metricsList {
+		if _, err := stmt.ExecContext(
+			ctx,
+			metric.ID,
+			metric.MType,
+			metric.Delta,
+			metric.Value,
+		); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

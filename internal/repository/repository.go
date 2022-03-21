@@ -7,4 +7,5 @@ type DBRepo interface {
 	SetMetric(metric *models.Metrics) error
 	GetMetricsList() ([]*models.Metrics, error)
 	SetMetricsList(metricsList []*models.Metrics) error
+	SetMetricsListFromFile(metricsList []*models.Metrics) error
 }

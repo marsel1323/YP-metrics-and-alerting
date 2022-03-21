@@ -102,6 +102,8 @@ func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitG
 	for range ticker.C {
 		log.Println("Sending metrics...")
 
+		var metricsList []*models.Metrics
+
 		for metricName, value := range metricsMap {
 			metricType := GaugeMetricType
 			if metricName == PollCount {
@@ -134,25 +136,27 @@ func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitG
 					metric.Hash = helpers.Hash(src, key)
 				}
 			}
+
 			log.Printf("%+v\n", metric)
-			url := fmt.Sprintf("%s/update", serverHost)
+			metricsList = append(metricsList, metric)
+		}
 
-			body, err := json.Marshal(metric)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			request, err := http.Post(url, "application/json", bytes.NewReader(body))
-			if err != nil {
-				log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
-				continue
-			}
+		url := fmt.Sprintf("%s/updates", serverHost)
+		body, err := json.Marshal(metricsList)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		request, err := http.Post(url, "application/json", bytes.NewReader(body))
+		if err != nil {
+			log.Println("Unable to send metrics to server:", err)
+			continue
+		}
 
-			err = request.Body.Close()
-			if err != nil {
-				log.Println(err)
-				break
-			}
+		err = request.Body.Close()
+		if err != nil {
+			log.Println(err)
+			break
 		}
 	}
 

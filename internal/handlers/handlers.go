@@ -195,6 +195,31 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	return
 }
 
+func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("UpdateMetricsListJSONHandler")
+
+	var metrics []*models.Metrics
+
+	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if repo.App.Config.StoreInterval == 0 {
+		repo.SaveMetrics()
+	}
+
+	err := repo.DB.SetMetricsList(metrics)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	return
+}
+
 func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("GetMetricJSONHandler")
 
@@ -252,7 +277,7 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.FileStorage) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			err = repo.DB.SetMetricsList(slice)
+			err = repo.DB.SetMetricsListFromFile(slice)
 			if err != nil {
 				log.Println(err)
 			}
