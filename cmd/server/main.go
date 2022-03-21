@@ -105,7 +105,7 @@ func initDB(dsn string) (*sql.DB, error) {
 		(
 			id    varchar not null,
 			type  varchar not null,
-			delta int,
+			delta bigint,
 			value double precision,
 			hash  varchar
 		);
