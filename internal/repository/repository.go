@@ -1,13 +1,10 @@
 package repository
 
+import "YP-metrics-and-alerting/internal/models"
+
 type DBRepo interface {
-	GetAllGaugeMetricValues() (map[string]float64, error)
-	GetGaugeMetricValue(string) (float64, error)
-	SetGaugeMetricValue(string, float64) error
-
-	GetAllCounterMetricValues() (map[string]int64, error)
-	GetCounterMetricValue(string) (int64, error)
-	SetCounterMetricValue(string, int64) error
-
-	BunchSetMetrics(mapStorage *MapStorageRepo) error
+	GetMetric(id string) (*models.Metrics, error)
+	SetMetric(metric *models.Metrics) error
+	GetMetricsList() ([]*models.Metrics, error)
+	SetMetricsList(metricsList []*models.Metrics) error
 }

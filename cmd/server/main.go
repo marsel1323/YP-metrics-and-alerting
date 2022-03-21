@@ -7,6 +7,7 @@ import (
 	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
+	"database/sql"
 	"flag"
 	"log"
 	"net/http"
@@ -55,14 +56,21 @@ func main() {
 		log.Fatal("Cannot create template cache")
 		return
 	}
-
 	app.TemplateCache = tc
 
-	var dbStorage repository.DBRepo = repository.NewMapStorageRepo()
-	var fileStorage storage.FileStorage = storage.NewJSONFileStorage(app.Config.StoreFile)
+	render.NewRenderer(app)
+
+	//var dbStorage repository.DBRepo = repository.NewMapStorageRepo()
+
+	db, err := initDB(cfg.DSN)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	var dbStorage repository.DBRepo = repository.NewPostgresStorage(db)
 
 	repo := handlers.NewRepo(app, dbStorage)
-	render.NewRenderer(app)
+
+	var fileStorage storage.FileStorage = storage.NewJSONFileStorage(app.Config.StoreFile)
 
 	app.FileStorage = fileStorage
 
@@ -76,6 +84,45 @@ func main() {
 	}
 	log.Println("Server is serving on", server.Addr)
 	log.Fatal(server.ListenAndServe())
+}
+
+func initDB(dsn string) (*sql.DB, error) {
+	// connect to DB
+	db, err := sql.Open("pgx", dsn)
+	//defer db.Close()
+	if err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+
+	if err = db.Ping(); err != nil {
+		log.Fatalf("Unable to ping database: %v\n", err)
+	}
+
+	// create table if not exists
+	row := db.QueryRow(`
+		CREATE TABLE IF NOT EXISTS metrics
+		(
+			id    varchar not null,
+			type  varchar not null,
+			delta int,
+			value double precision,
+			hash  varchar
+		);
+	`)
+	if err := row.Err(); err != nil {
+		log.Fatal("Create metrics table error:", err.Error())
+	}
+
+	// create index
+	row = db.QueryRow(`
+		CREATE UNIQUE INDEX IF NOT EXISTS metrics_id_uindex
+			ON metrics (id);
+	`)
+	if err := row.Err(); err != nil {
+		log.Fatal("Create metrics table error:", err.Error())
+	}
+
+	return db, nil
 }
 
 func handleSignals(repo *handlers.Repository) {

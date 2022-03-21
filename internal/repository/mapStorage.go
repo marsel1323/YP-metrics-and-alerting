@@ -1,61 +1,52 @@
 package repository
 
-import "fmt"
+import (
+	"YP-metrics-and-alerting/internal/models"
+	"fmt"
+)
 
-type MapStorageRepo struct {
-	Gauge   map[string]float64
-	Counter map[string]int64
+type MapStorageRepo map[string]*models.Metrics
+
+func NewMapStorageRepo() MapStorageRepo {
+	return make(map[string]*models.Metrics)
 }
 
-func NewMapStorageRepo() *MapStorageRepo {
-	return &MapStorageRepo{
-		Gauge:   make(map[string]float64),
-		Counter: make(map[string]int64),
-	}
-}
-
-func (m *MapStorageRepo) GetGaugeMetricValue(metricName string) (float64, error) {
-	value, ok := m.Gauge[metricName]
+func (m MapStorageRepo) GetMetric(id string) (*models.Metrics, error) {
+	metric, ok := m[id]
 	if !ok {
-		return 0, fmt.Errorf("metric '%s' not found", metricName)
+		return nil, fmt.Errorf("metric '%s' not found", id)
 	}
-	return value, nil
+	return metric, nil
 }
 
-func (m *MapStorageRepo) GetAllGaugeMetricValues() (map[string]float64, error) {
-	return m.Gauge, nil
+func (m MapStorageRepo) GetMetricsList() ([]*models.Metrics, error) {
+	var metrics []*models.Metrics
+	for _, metric := range m {
+		metrics = append(metrics, metric)
+	}
+	return metrics, nil
 }
 
-func (m *MapStorageRepo) SetGaugeMetricValue(metricName string, metricValue float64) error {
-	m.Gauge[metricName] = metricValue
+func (m MapStorageRepo) SetMetric(metric *models.Metrics) error {
+	foundMetric, ok := m[metric.ID]
+
+	if ok {
+		if metric.MType == models.CounterType {
+			sum := *foundMetric.Delta + *metric.Delta
+			foundMetric.Delta = &sum
+		} else if metric.MType == models.GaugeType {
+			foundMetric = metric
+		}
+	} else {
+		m[metric.ID] = metric
+	}
+
 	return nil
 }
 
-func (m *MapStorageRepo) GetAllCounterMetricValues() (map[string]int64, error) {
-	return m.Counter, nil
-}
-
-func (m *MapStorageRepo) GetCounterMetricValue(metricName string) (int64, error) {
-	value, ok := m.Counter[metricName]
-	if !ok {
-		return 0, fmt.Errorf("metric '%s' not found", metricName)
+func (m MapStorageRepo) SetMetricsList(metricsList []*models.Metrics) error {
+	for _, metric := range metricsList {
+		m[metric.ID] = metric
 	}
-	return value, nil
-}
-
-func (m *MapStorageRepo) SetCounterMetricValue(metricName string, metricValue int64) error {
-	m.Counter[metricName] += metricValue
-	return nil
-}
-
-func (m *MapStorageRepo) BunchSetMetrics(mapStorage *MapStorageRepo) error {
-	if mapStorage.Gauge != nil {
-		m.Gauge = mapStorage.Gauge
-	}
-
-	if mapStorage.Counter != nil {
-		m.Counter = mapStorage.Counter
-	}
-
 	return nil
 }

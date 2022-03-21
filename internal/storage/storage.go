@@ -1,10 +1,10 @@
 package storage
 
 import (
-	"YP-metrics-and-alerting/internal/repository"
+	"YP-metrics-and-alerting/internal/models"
 )
 
 type FileStorage interface {
 	Save(data []byte) error
-	Retrieve() (*repository.MapStorageRepo, error)
+	Retrieve() ([]*models.Metrics, error)
 }

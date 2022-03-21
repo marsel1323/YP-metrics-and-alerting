@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"YP-metrics-and-alerting/internal/repository"
+	"YP-metrics-and-alerting/internal/models"
 	"encoding/json"
 	"io"
 	"log"
@@ -32,7 +32,7 @@ func (s *JSONFileStorage) Save(data []byte) error {
 	return nil
 }
 
-func (s *JSONFileStorage) Retrieve() (*repository.MapStorageRepo, error) {
+func (s *JSONFileStorage) Retrieve() ([]*models.Metrics, error) {
 	log.Println("restore from file...")
 
 	f, err := os.Open(s.fileName)
@@ -46,10 +46,11 @@ func (s *JSONFileStorage) Retrieve() (*repository.MapStorageRepo, error) {
 		return nil, err
 	}
 
-	mapStorage := &repository.MapStorageRepo{}
-	err = json.Unmarshal(data, mapStorage)
+	var slice []*models.Metrics
+	err = json.Unmarshal(data, &slice)
 	if err != nil {
 		return nil, err
 	}
-	return mapStorage, nil
+
+	return slice, nil
 }
