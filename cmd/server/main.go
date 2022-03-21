@@ -57,23 +57,24 @@ func main() {
 		return
 	}
 	app.TemplateCache = tc
-
 	render.NewRenderer(app)
 
-	//var dbStorage repository.DBRepo = repository.NewMapStorageRepo()
-
-	db, err := initDB(cfg.DSN)
-	if err != nil {
-		log.Fatal(err.Error())
+	var dbStorage repository.DBRepo
+	var db *sql.DB
+	if cfg.DSN != "" {
+		db, err = initDB(cfg.DSN)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	} else {
+		dbStorage = repository.NewMapStorageRepo()
 	}
-	var dbStorage repository.DBRepo = repository.NewPostgresStorage(db)
+	dbStorage = repository.NewPostgresStorage(db)
 
 	repo := handlers.NewRepo(app, dbStorage)
 
 	var fileStorage storage.FileStorage = storage.NewJSONFileStorage(app.Config.StoreFile)
-
 	app.FileStorage = fileStorage
-
 	go repo.ServeFileStorage(fileStorage)
 
 	go handleSignals(repo)
@@ -87,7 +88,7 @@ func main() {
 }
 
 func initDB(dsn string) (*sql.DB, error) {
-	// connect to DB
+	log.Println("Connect to DB:", dsn)
 	db, err := sql.Open("pgx", dsn)
 	//defer db.Close()
 	if err != nil {
