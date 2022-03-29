@@ -191,8 +191,7 @@ func UpdateMetrics(interval time.Duration, wg *sync.WaitGroup, cache *AgentCache
 		cache.Set(StackSys, NewGaugeMetric(StackSys, float64(memStats.StackSys)))
 		cache.Set(TotalAlloc, NewGaugeMetric(TotalAlloc, float64(memStats.TotalAlloc)))
 		cache.Set(Sys, NewGaugeMetric(Sys, float64(memStats.Sys)))
-
 		cache.Set(PollCount, NewCounterMetric(PollCount, int64(pollCount)))
-		cache.Set(RandomValue, NewCounterMetric(RandomValue, int64(rand.Intn(10000))))
+		cache.Set(RandomValue, NewGaugeMetric(RandomValue, float64(rand.Intn(10000))))
 	}
 }
