@@ -18,7 +18,12 @@ func TestNewMapStorageRepo(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error while setting counterMetric")
 	}
+
 	m, err := repo.GetMetric(counterMetric.ID)
+	if err != nil {
+		t.Errorf("Error while getting counterMetric: %s", counterMetric.ID)
+	}
+
 	expected := int64(1)
 	if *m.Delta != expected {
 		t.Errorf("Expected %d, received %d", expected, *m.Delta)
@@ -30,6 +35,9 @@ func TestNewMapStorageRepo(t *testing.T) {
 		t.Errorf("Error while setting counterMetric")
 	}
 	m, err = repo.GetMetric(counterMetric.ID)
+	if err != nil {
+		t.Errorf("Error while getting counterMetric: %s", counterMetric.ID)
+	}
 	expected = int64(2)
 	if *m.Delta != expected {
 		t.Errorf("Expected %d, received %d", expected, *m.Delta)
@@ -40,7 +48,7 @@ func TestNewMapStorageRepo(t *testing.T) {
 func TestNewMapStorageRepo_GaugeMetric(t *testing.T) {
 	repo := NewMapStorageRepo()
 
-	var expected float64 = 65637.019
+	var expected = 65637.019
 	gaugeMetric := &models.Metrics{
 		ID:    "testSetGet134",
 		MType: "gauge",
@@ -51,6 +59,9 @@ func TestNewMapStorageRepo_GaugeMetric(t *testing.T) {
 		t.Errorf("Error while setting gaugeMetric")
 	}
 	m, err := repo.GetMetric(gaugeMetric.ID)
+	if err != nil {
+		t.Errorf("Error while getting counterMetric: %s", m.ID)
+	}
 
 	if *m.Value != expected {
 		t.Errorf("Expected %f, received %f", expected, *m.Value)
@@ -68,6 +79,9 @@ func TestNewMapStorageRepo_GaugeMetric(t *testing.T) {
 		t.Errorf("Error while setting gaugeMetric")
 	}
 	m, err = repo.GetMetric(gaugeMetric2.ID)
+	if err != nil {
+		t.Errorf("Error while getting counterMetric: %s", gaugeMetric2.ID)
+	}
 	if *m.Value != expected {
 		t.Errorf("Expected %f, received %f", expected, *m.Value)
 	}

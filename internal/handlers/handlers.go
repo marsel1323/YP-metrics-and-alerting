@@ -12,7 +12,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	chi "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"io"
 	"log"
@@ -77,7 +77,6 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request) {
@@ -192,7 +191,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +215,6 @@ func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *h
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
@@ -332,12 +329,12 @@ func (repo *Repository) PingDB(w http.ResponseWriter, _ *http.Request) {
 	dsn := repo.App.Config.DSN
 
 	db, err := sql.Open("pgx", dsn)
-	defer db.Close()
 	if err != nil {
 		log.Printf("Unable to connect to database: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
 	if err = db.Ping(); err != nil {
 		log.Printf("Unable to ping database: %v\n", err)

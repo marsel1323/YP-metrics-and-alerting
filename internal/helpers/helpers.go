@@ -32,16 +32,3 @@ func Hash(src string, key string) string {
 	dst := h.Sum(nil)
 	return hex.EncodeToString(dst)
 }
-
-func Compare(str string, key string) error {
-	log.Println("Compare...")
-	data, err := hex.DecodeString(str)
-	if err != nil {
-		return err
-	}
-	h := hmac.New(sha256.New, []byte(key))
-	h.Write(data)
-	sign := h.Sum(nil)
-	log.Println("Sign:", sign)
-	return nil
-}
