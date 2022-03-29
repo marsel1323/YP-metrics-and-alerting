@@ -54,26 +54,33 @@ const (
 )
 
 func main() {
-	cfg := config.AgentConfig{}
+	cfg := &config.AgentConfig{}
 
 	serverHost := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
 	reportInterval := helpers.StringToSeconds(helpers.GetEnv("REPORT_INTERVAL", "10s"))
 	pollInterval := helpers.StringToSeconds(helpers.GetEnv("POLL_INTERVAL", "2s"))
+	key := helpers.GetEnv("KEY", "secretkey")
 
 	flag.StringVar(&cfg.Address, "a", serverHost, "Send metrics to address:port")
 	flag.DurationVar(&cfg.ReportInterval, "r", reportInterval, "Report of interval")
 	flag.DurationVar(&cfg.PoolInterval, "p", pollInterval, "Pool of interval")
+	flag.StringVar(&cfg.Key, "k", key, "Hashing key")
 	flag.Parse()
+
+	protocol := "http"
+	cfg.Address = fmt.Sprintf("%s://%s", protocol, cfg.Address)
+
+	log.Println(cfg)
 
 	metricsMap := NewMetricsMap()
 
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
-	go metricsMap.UpdateMetrics(cfg.PoolInterval)
+	go metricsMap.UpdateMetrics(cfg.PoolInterval, wg)
 
 	wg.Add(1)
-	go metricsMap.SendMetrics(cfg.Address, cfg.ReportInterval)
+	go metricsMap.SendMetrics(cfg, wg)
 
 	wg.Wait()
 }
@@ -84,15 +91,20 @@ func NewMetricsMap() MetricsMap {
 	return make(map[string]interface{})
 }
 
-func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Duration) {
-	for {
-		time.Sleep(interval)
+func (metricsMap MetricsMap) SendMetrics(cfg *config.AgentConfig, wg *sync.WaitGroup) {
+	defer wg.Done()
 
+	serverHost := cfg.Address
+	interval := cfg.ReportInterval
+	key := cfg.Key
+
+	ticker := time.NewTicker(interval)
+	for range ticker.C {
 		log.Println("Sending metrics...")
 
-		for key, value := range metricsMap {
-			metricName := key
+		var metricsList []*models.Metrics
 
+		for metricName, value := range metricsMap {
 			metricType := GaugeMetricType
 			if metricName == PollCount {
 				metricType = CounterMetricType
@@ -111,38 +123,55 @@ func (metricsMap MetricsMap) SendMetrics(serverHost string, interval time.Durati
 				metric.Value = &metricValue
 			}
 
-			url := fmt.Sprintf("http://%s/update", serverHost)
+			if key != "" {
+				if metricType == CounterMetricType {
+					src := fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta)
+					log.Println(src)
+					metric.Hash = helpers.Hash(src, key)
+				}
 
-			body, err := json.Marshal(metric)
-			if err != nil {
-				log.Println(err)
-				return
+				if metricType == GaugeMetricType {
+					src := fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value)
+					log.Println(src)
+					metric.Hash = helpers.Hash(src, key)
+				}
 			}
 
-			request, err := http.Post(url, "application/json", bytes.NewReader(body))
-			if err != nil {
-				log.Printf("Unable to send metric %s to server: %v\n", metricName, err)
-				continue
-			}
+			log.Printf("%+v\n", metric)
+			metricsList = append(metricsList, metric)
+		}
 
-			err = request.Body.Close()
-			if err != nil {
-				log.Println(err)
-			}
+		url := fmt.Sprintf("%s/updates", serverHost)
+		body, err := json.Marshal(metricsList)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		request, err := http.Post(url, "application/json", bytes.NewReader(body))
+		if err != nil {
+			log.Println("Unable to send metrics to server:", err)
+			continue
+		}
+
+		err = request.Body.Close()
+		if err != nil {
+			log.Println(err)
+			break
 		}
 	}
 
 }
 
-func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
+func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	var memStats runtime.MemStats
 	var pollCount int
 
 	rand.Seed(time.Now().Unix())
 
-	for {
-		time.Sleep(interval)
-
+	ticker := time.NewTicker(interval)
+	for range ticker.C {
 		log.Println("Updating metrics...")
 
 		pollCount++
@@ -152,7 +181,7 @@ func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
 		metricsMap[Alloc] = float64(memStats.Alloc)
 		metricsMap[BuckHashSys] = float64(memStats.BuckHashSys)
 		metricsMap[Frees] = float64(memStats.Frees)
-		metricsMap[GCCPUFraction] = (memStats.GCCPUFraction)
+		metricsMap[GCCPUFraction] = memStats.GCCPUFraction
 		metricsMap[GCSys] = float64(memStats.GCSys)
 		metricsMap[HeapAlloc] = float64(memStats.HeapAlloc)
 		metricsMap[HeapIdle] = float64(memStats.HeapIdle)
@@ -179,5 +208,4 @@ func (metricsMap MetricsMap) UpdateMetrics(interval time.Duration) {
 		metricsMap[PollCount] = int64(pollCount)
 		metricsMap[RandomValue] = float64(rand.Intn(10000))
 	}
-
 }

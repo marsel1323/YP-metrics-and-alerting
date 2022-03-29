@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Metrics</title>
+    <meta http-equiv="refresh" content="10"/>
+</head>
+<body>
+
+<h2>Metrics</h2>
+{{ $metrics := .Metrics }}
+<ol>
+    {{ range $key, $value := $metrics }}
+        <li>
+            <b>{{ $key }}</b>: {{ $value }}
+        </li>
+    {{ end }}
+</ol>
+
+</body>
+</html>
