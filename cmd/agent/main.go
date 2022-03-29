@@ -97,7 +97,7 @@ func SendMetrics(cfg *config.AgentConfig, wg *sync.WaitGroup, cache *AgentCache)
 	for range ticker.C {
 		log.Println("Sending metrics...")
 
-		var metricsList = cache.GetSlice()
+		var metricsList = cache.MapToSlice()
 
 		if cfg.Key != "" {
 			for _, metric := range metricsList {

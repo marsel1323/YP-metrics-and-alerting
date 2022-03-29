@@ -31,12 +31,13 @@ func (c *AgentCache) Get(key string) (*Metric, bool) {
 	return v, ok
 }
 
-func (c *AgentCache) GetSlice() []*Metric {
-	var metricsSlice []*Metric
+func (c *AgentCache) MapToSlice() []*Metric {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
+	var metricsSlice []*Metric
 	for _, metric := range c.metricsMap {
 		metricsSlice = append(metricsSlice, metric)
 	}
-
 	return metricsSlice
 }
