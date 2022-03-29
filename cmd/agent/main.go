@@ -97,13 +97,12 @@ func SendMetrics(cfg *config.AgentConfig, wg *sync.WaitGroup, cache *AgentCache)
 	for range ticker.C {
 		log.Println("Sending metrics...")
 
-		var metricsList []*Metric
+		var metricsList = cache.GetSlice()
 
-		for _, metric := range cache.metricsMap {
-			if cfg.Key != "" {
+		if cfg.Key != "" {
+			for _, metric := range metricsList {
 				metric.SetHash(cfg.Key)
 			}
-			metricsList = append(metricsList, metric)
 		}
 
 		url := fmt.Sprintf("%s/updates", cfg.Address)
