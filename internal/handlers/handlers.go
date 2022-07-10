@@ -274,7 +274,7 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.FileStorage) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			err = repo.DB.SetMetricsListFromFile(slice)
+			err = repo.DB.SetMetricsList(slice)
 			if err != nil {
 				log.Println(err)
 			}
