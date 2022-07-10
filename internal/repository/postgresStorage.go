@@ -83,6 +83,11 @@ func (postgres PostgresStorage) GetMetricsList() ([]*models.Metrics, error) {
 	}
 	defer rows.Close()
 
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
 	var metrics []*models.Metrics
 
 	for rows.Next() {
