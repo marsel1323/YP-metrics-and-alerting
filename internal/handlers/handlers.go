@@ -81,13 +81,13 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 	metricName := chi.URLParam(r, "metricName")
 
 	if metricType != models.GaugeType && metricType != models.CounterType {
-		http.Error(w, "Unknown metric", http.StatusBadRequest)
+		http.Error(w, "Unknown metric", http.StatusNotFound)
 		return
 	}
 
 	metric, err := repo.DB.GetMetric(metricName)
 	if err != nil {
-		http.Error(w, "Metric Not Found", http.StatusBadRequest)
+		http.Error(w, "Metric Not Found", http.StatusNotFound)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
-		http.Error(w, "Metric Type Not Found", http.StatusBadRequest)
+		http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 	}
 }
 
