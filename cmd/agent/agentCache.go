@@ -6,12 +6,13 @@ import (
 
 type AgentCache struct {
 	metricsMap map[string]*Metric
-	mu         sync.RWMutex
+	mu         *sync.RWMutex
 }
 
 func NewAgentCache() *AgentCache {
 	return &AgentCache{
 		metricsMap: make(map[string]*Metric),
+		mu:         &sync.RWMutex{},
 	}
 }
 

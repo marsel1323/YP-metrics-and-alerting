@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"sync"
 	"time"
@@ -57,7 +58,7 @@ const (
 	CPUutilization1 = "CPUutilization1"
 )
 
-func main() {
+func InitConfig() *config.AgentConfig {
 	cfg := &config.AgentConfig{}
 
 	serverHost := helpers.GetEnv("ADDRESS", "127.0.0.1:8080")
@@ -74,6 +75,12 @@ func main() {
 	protocol := "http"
 	cfg.Address = fmt.Sprintf("%s://%s", protocol, cfg.Address)
 
+	return cfg
+}
+
+func main() {
+	cfg := InitConfig()
+
 	cache := NewAgentCache()
 
 	wg := &sync.WaitGroup{}
@@ -86,6 +93,8 @@ func main() {
 
 	wg.Add(1)
 	go SendMetrics(cfg, wg, cache)
+
+	//http.ListenAndServe("localhost:8080", nil)
 
 	wg.Wait()
 }

@@ -3,49 +3,21 @@ package main
 import (
 	"YP-metrics-and-alerting/internal/config"
 	"YP-metrics-and-alerting/internal/handlers"
-	"YP-metrics-and-alerting/internal/helpers"
 	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
 	"database/sql"
-	"flag"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 )
 
 func main() {
-	serverAddressFlag := flag.String("a", "127.0.0.1:8080", "Listen to address:port")
-	storeIntervalFlag := flag.String("i", "300s", "Interval of store to file")
-	storeFileFlag := flag.String("f", "/tmp/devops-metrics-db.json", "Save metrics to file")
-	restoreFlag := flag.String("r", "true", "Restore from file")
-	keyFlag := flag.String("k", "", "Hashing key")
-	dbDsnFlag := flag.String("d", "", "Database DSN")
-	flag.Parse()
-
-	serverAddress := helpers.GetEnv("ADDRESS", *serverAddressFlag)
-	storeInterval := helpers.StringToSeconds(helpers.GetEnv("STORE_INTERVAL", *storeIntervalFlag))
-	storeFile := helpers.GetEnv("STORE_FILE", *storeFileFlag)
-	restore, err := strconv.ParseBool(helpers.GetEnv("RESTORE", *restoreFlag))
-	if err != nil {
-		log.Fatal(err)
-	}
-	key := helpers.GetEnv("KEY", *keyFlag)
-	dbDsn := helpers.GetEnv("DATABASE_DSN", *dbDsnFlag)
-
-	cfg := config.ServerConfig{
-		Address:       serverAddress,
-		StoreFile:     storeFile,
-		Restore:       restore,
-		StoreInterval: storeInterval,
-		Key:           key,
-		DSN:           dbDsn,
-	}
-	log.Println(cfg)
+	cfg := config.InitServerConfig()
 
 	app := &config.Application{
 		Config: cfg,
@@ -54,7 +26,6 @@ func main() {
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("Cannot create template cache")
-		return
 	}
 	app.TemplateCache = tc
 	render.NewRenderer(app)

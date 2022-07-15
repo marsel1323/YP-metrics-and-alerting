@@ -12,8 +12,7 @@ type Metric struct {
 	Value *float64 `json:"value,omitempty"`
 	Delta *int64   `json:"delta,omitempty"`
 	Hash  string   `json:"hash,omitempty"`
-
-	mu sync.RWMutex
+	mu    *sync.RWMutex
 }
 
 func (m *Metric) SetHash(key string) {
@@ -38,6 +37,7 @@ func NewGaugeMetric(name string, value float64) *Metric {
 		Name:  name,
 		Type:  GaugeMetricType,
 		Value: &value,
+		mu:    &sync.RWMutex{},
 	}
 }
 
@@ -46,5 +46,6 @@ func NewCounterMetric(name string, delta int64) *Metric {
 		Name:  name,
 		Type:  CounterMetricType,
 		Delta: &delta,
+		mu:    &sync.RWMutex{},
 	}
 }

@@ -34,13 +34,11 @@ func NewRepo(appConfig *config.Application, db repository.DBRepo) *Repository {
 	}
 }
 
+//UpdateMetricHandler updates metric and returns status
 func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("UpdateMetricHandler")
-
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	metricValue := chi.URLParam(r, "metricValue")
-	log.Println(metricType, metricName, metricValue)
 
 	metric := &models.Metrics{
 		ID:    metricName,
@@ -53,7 +51,6 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 			http.Error(w, "Invalid Value", http.StatusBadRequest)
 			return
 		}
-
 		metric.Value = &value
 
 	} else if metric.MType == models.CounterType {
@@ -80,11 +77,17 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("GetMetricHandler")
-
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
-	log.Println(metricType, metricName)
+
+	if metricType == models.GaugeType {
+
+	} else if metricType == models.CounterType {
+
+	} else {
+		http.Error(w, "Unknown metric", http.StatusNotImplemented)
+		return
+	}
 
 	metric, err := repo.DB.GetMetric(metricName)
 	if err != nil {
