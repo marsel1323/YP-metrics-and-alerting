@@ -80,11 +80,7 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 
-	if metricType == models.GaugeType {
-
-	} else if metricType == models.CounterType {
-
-	} else {
+	if metricType != models.GaugeType && metricType != models.CounterType {
 		http.Error(w, "Unknown metric", http.StatusNotImplemented)
 		return
 	}
@@ -99,23 +95,16 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 		_, err = w.Write([]byte(fmt.Sprintf("%.3f", *metric.Value)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
-
-		return
 
 	} else if metric.MType == models.CounterType {
 		_, err = w.Write([]byte(fmt.Sprintf("%d", *metric.Delta)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
-
-		return
-
+	} else {
+		http.Error(w, "Metric Type Not Found", http.StatusNotImplemented)
 	}
-
-	http.Error(w, "Metric Type Not Found", http.StatusNotFound)
 }
 
 func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,15 +119,12 @@ func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Reques
 	type htmlPage struct {
 		Metrics []*models.Metrics
 	}
-
 	data := htmlPage{
 		Metrics: metrics,
 	}
-
 	err = render.Template(w, r, "metrics.gohtml", data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -147,6 +133,21 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if metric.MType != models.GaugeType && metric.MType != models.CounterType {
+		http.Error(w, "Invalid Metric Type", http.StatusBadRequest)
+		return
+	}
+
+	if metric.MType == models.GaugeType && metric.Delta != nil {
+		http.Error(w, "Use Value instead of Delta", http.StatusBadRequest)
+		return
+	}
+
+	if metric.MType == models.CounterType && metric.Value != nil {
+		http.Error(w, "Use Delta instead of Value", http.StatusBadRequest)
 		return
 	}
 
@@ -171,7 +172,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 
 	err := repo.DB.SetMetric(&metric)
 	if err != nil {
-		http.Error(w, "Server Error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -313,7 +314,12 @@ func (repo *Repository) PingDB(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+
+		}
+	}(db)
 
 	if err = db.Ping(); err != nil {
 		log.Printf("Unable to ping database: %v\n", err)

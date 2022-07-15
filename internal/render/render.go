@@ -22,6 +22,7 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 	myCache := map[string]*template.Template{}
 
 	pages, err := filepath.Glob(fmt.Sprintf("%s/*.gohtml", pathToTemplates))
+	fmt.Println(pages)
 	if err != nil {
 		return myCache, err
 	}

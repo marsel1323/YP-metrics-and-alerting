@@ -2,6 +2,7 @@ package repository
 
 import (
 	"YP-metrics-and-alerting/internal/models"
+	"errors"
 	"fmt"
 )
 
@@ -29,8 +30,10 @@ func (m MapStorageRepo) GetMetricsList() ([]*models.Metrics, error) {
 
 func (m MapStorageRepo) SetMetric(metric *models.Metrics) error {
 	foundMetric, ok := m[metric.ID]
-
 	if ok {
+		if metric.MType != foundMetric.MType {
+			return errors.New("metrics types don't match")
+		}
 		if metric.MType == models.CounterType {
 			sum := *foundMetric.Delta + *metric.Delta
 			foundMetric.Delta = &sum
