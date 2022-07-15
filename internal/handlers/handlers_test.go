@@ -149,7 +149,7 @@ func Test_GetMetricHandler(t *testing.T) {
 				metricName: "Alloc",
 			},
 			want: want{
-				statusCode: http.StatusNotImplemented,
+				statusCode: http.StatusNotFound,
 			},
 		},
 		{
