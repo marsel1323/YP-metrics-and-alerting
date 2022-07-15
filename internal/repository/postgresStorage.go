@@ -123,6 +123,42 @@ func (postgres PostgresStorage) SetMetricsList(metricsList []*models.Metrics) er
 				INSERT INTO metrics (id, type, delta, value)
 				VALUES ($1, $2, $3, $4)
 				ON CONFLICT (id)
+				DO UPDATE SET delta = metrics.delta + $3, value = $4;
+			`)
+	if err != nil {
+		return err
+	}
+
+	for _, metric := range metricsList {
+		if _, err := stmt.ExecContext(
+			ctx,
+			metric.ID,
+			metric.MType,
+			metric.Delta,
+			metric.Value,
+		); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (postgres PostgresStorage) SetMetricsListFromFile(metricsList []*models.Metrics) error {
+	log.Println("SetMetricsListFromFile")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := postgres.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := postgres.DB.PrepareContext(ctx, `
+				INSERT INTO metrics (id, type, delta, value)
+				VALUES ($1, $2, $3, $4)
+				ON CONFLICT (id)
 				DO UPDATE SET delta = $3, value = $4;
 			`)
 	if err != nil {

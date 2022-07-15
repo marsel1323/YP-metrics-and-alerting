@@ -50,3 +50,10 @@ func (m MapStorageRepo) SetMetricsList(metricsList []*models.Metrics) error {
 	}
 	return nil
 }
+
+func (m MapStorageRepo) SetMetricsListFromFile(metricsList []*models.Metrics) error {
+	for _, metric := range metricsList {
+		m[metric.ID] = metric
+	}
+	return nil
+}

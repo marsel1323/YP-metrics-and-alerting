@@ -94,10 +94,8 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Metric Not Found", http.StatusNotFound)
 		return
 	}
-	log.Printf("%+v\n", metric)
 
 	if metric.MType == models.GaugeType {
-		log.Println(*metric.Value)
 		_, err = w.Write([]byte(fmt.Sprintf("%.3f", *metric.Value)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -107,7 +105,6 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 		return
 
 	} else if metric.MType == models.CounterType {
-		log.Println(*metric.Delta)
 		_, err = w.Write([]byte(fmt.Sprintf("%d", *metric.Delta)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -146,21 +143,11 @@ func (repo *Repository) GetInfoPageHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("UpdateMetricJSONHandler")
-
 	var metric models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
-
-	log.Printf("%+v\n", metric)
-	if metric.Value != nil {
-		log.Println("Value:", *metric.Value)
-	}
-	if metric.Delta != nil {
-		log.Println("Delta:", *metric.Delta)
 	}
 
 	if key := repo.App.Config.Key; key != "" {
@@ -172,11 +159,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 		}
 
 		hash := helpers.Hash(str, key)
-		log.Println(hash)
-		log.Println(metric.Hash)
-		log.Println(hmac.Equal([]byte(hash), []byte(metric.Hash)))
 		if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
-			log.Println("Hashes are not equal!")
 			http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
 			return
 		}
@@ -188,7 +171,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 
 	err := repo.DB.SetMetric(&metric)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -197,8 +179,6 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 }
 
 func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("UpdateMetricsListJSONHandler")
-
 	var metrics []*models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
@@ -212,7 +192,6 @@ func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *h
 
 	err := repo.DB.SetMetricsList(metrics)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -221,14 +200,11 @@ func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *h
 }
 
 func (repo *Repository) GetMetricJSONHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("GetMetricJSONHandler")
-
 	w.Header().Set("Content-Type", "application/json")
 
 	var metric *models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
-		log.Println("Decode err:", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -277,7 +253,7 @@ func (repo *Repository) ServeFileStorage(fileStorage storage.FileStorage) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			err = repo.DB.SetMetricsList(slice)
+			err = repo.DB.SetMetricsListFromFile(slice)
 			if err != nil {
 				log.Println(err)
 			}

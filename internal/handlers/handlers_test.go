@@ -5,7 +5,6 @@ import (
 	"YP-metrics-and-alerting/internal/repository"
 	"context"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -117,7 +116,7 @@ func TestUpdateMetricHandler(t *testing.T) {
 
 			assert.Equal(t, test.want.statusCode, result.StatusCode)
 
-			//defer result.Body.Close()
+			defer result.Body.Close()
 			//resBody, err := io.ReadAll(result.Body)
 			//if err != nil {
 			//	t.Fatal(err)
@@ -201,7 +200,7 @@ func TestGetMetricHandler(t *testing.T) {
 			handler := http.HandlerFunc(repo.UpdateMetricHandler)
 			handler.ServeHTTP(recorder, request)
 			result := recorder.Result()
-
+			defer result.Body.Close()
 			assert.Equal(t, test.want.statusCode, result.StatusCode)
 
 			request = httptest.NewRequest(
