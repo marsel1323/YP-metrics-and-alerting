@@ -67,6 +67,25 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if key := repo.App.Config.Key; key != "" {
+		var str string
+		if metric.MType == models.CounterType {
+			str = fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta)
+		} else if metric.MType == models.GaugeType {
+			str = fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value)
+		}
+
+		hash := helpers.Hash(str, key)
+		if !hmac.Equal([]byte(hash), []byte(metric.Hash)) {
+			http.Error(w, "Hashes are not equal!", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if repo.App.Config.StoreInterval == 0 {
+		repo.SaveMetrics()
+	}
+
 	err := repo.DB.SetMetric(metric)
 	if err != nil {
 		http.Error(w, "Server Error", http.StatusInternalServerError)
