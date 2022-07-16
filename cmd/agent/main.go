@@ -94,7 +94,7 @@ func main() {
 	wg.Add(1)
 	go SendMetrics(cfg, wg, cache)
 
-	http.ListenAndServe("localhost:8080", nil)
+	//http.ListenAndServe("localhost:8080", nil)
 
 	wg.Wait()
 }
@@ -116,7 +116,55 @@ func UpdateMetrics(interval time.Duration, wg *sync.WaitGroup, cache *AgentCache
 
 		log.Println("UpdateExtraMetrics...")
 		SetVirtualMemoryStats(cache)
-		SetCpuStats(cache)
+		SetCPUStats(cache)
+	}
+}
+
+func UpdateExtraMetrics(interval time.Duration, wg *sync.WaitGroup, cache *AgentCache) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(interval)
+	for range ticker.C {
+		log.Println("UpdateExtraMetrics...")
+
+		SetVirtualMemoryStats(cache)
+
+		SetCPUStats(cache)
+	}
+}
+
+func SendMetrics(cfg *config.AgentConfig, wg *sync.WaitGroup, cache *AgentCache) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(cfg.ReportInterval)
+	for range ticker.C {
+		log.Println("Sending metrics...")
+
+		var metricsList = cache.MapToSlice()
+
+		if cfg.Key != "" {
+			for _, metric := range metricsList {
+				metric.SetHash(cfg.Key)
+			}
+		}
+
+		url := fmt.Sprintf("%s/updates", cfg.Address)
+		body, err := json.Marshal(metricsList)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		request, err := http.Post(url, "application/json", bytes.NewReader(body))
+		if err != nil {
+			log.Println("Unable to send metrics to server:", err)
+			continue
+		}
+
+		err = request.Body.Close()
+		if err != nil {
+			log.Println(err)
+			break
+		}
 	}
 }
 
@@ -153,19 +201,6 @@ func SetRuntimeStats(cache *AgentCache) {
 	cache.Set(Sys, NewGaugeMetric(Sys, float64(memStats.Sys)))
 }
 
-func UpdateExtraMetrics(interval time.Duration, wg *sync.WaitGroup, cache *AgentCache) {
-	defer wg.Done()
-
-	ticker := time.NewTicker(interval)
-	for range ticker.C {
-		log.Println("UpdateExtraMetrics...")
-
-		SetVirtualMemoryStats(cache)
-
-		SetCpuStats(cache)
-	}
-}
-
 func SetVirtualMemoryStats(cache *AgentCache) {
 	v, err := mem.VirtualMemory()
 	if err != nil {
@@ -175,45 +210,10 @@ func SetVirtualMemoryStats(cache *AgentCache) {
 	cache.Set(FreeMemory, NewGaugeMetric(FreeMemory, float64(v.Free)))
 }
 
-func SetCpuStats(cache *AgentCache) {
+func SetCPUStats(cache *AgentCache) {
 	percent, err := cpu.Percent(time.Second, false)
 	if err != nil {
 		log.Println(err)
 	}
 	cache.Set(CPUutilization1, NewGaugeMetric(CPUutilization1, percent[0]))
-}
-
-func SendMetrics(cfg *config.AgentConfig, wg *sync.WaitGroup, cache *AgentCache) {
-	defer wg.Done()
-
-	ticker := time.NewTicker(cfg.ReportInterval)
-	for range ticker.C {
-		log.Println("Sending metrics...")
-
-		var metricsList = cache.MapToSlice()
-
-		if cfg.Key != "" {
-			for _, metric := range metricsList {
-				metric.SetHash(cfg.Key)
-			}
-		}
-
-		url := fmt.Sprintf("%s/updates", cfg.Address)
-		body, err := json.Marshal(metricsList)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		request, err := http.Post(url, "application/json", bytes.NewReader(body))
-		if err != nil {
-			log.Println("Unable to send metrics to server:", err)
-			continue
-		}
-
-		err = request.Body.Close()
-		if err != nil {
-			log.Println(err)
-			break
-		}
-	}
 }
