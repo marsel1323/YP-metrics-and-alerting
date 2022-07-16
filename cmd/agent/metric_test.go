@@ -13,11 +13,8 @@ func TestNewGaugeMetric(t *testing.T) {
 	assert.Equal(t, gaugeMetric.Type, "gauge")
 	assert.Equal(t, *gaugeMetric.Value, 1.0)
 	assert.IsType(t, "", gaugeMetric.Hash)
-	t.Log(gaugeMetric)
 
 	gaugeMetric.SetHash("hash")
-	t.Log(gaugeMetric)
-
 	assert.IsType(t, "", gaugeMetric.Hash)
 }
 
@@ -27,5 +24,7 @@ func TestNewCounterMetric(t *testing.T) {
 	assert.Equal(t, counterMetric.Name, PollCount)
 	assert.Equal(t, *counterMetric.Delta, int64(1))
 	assert.IsType(t, "", counterMetric.Hash)
-	t.Log(counterMetric)
+
+	counterMetric.SetHash("hash")
+	assert.IsType(t, "", counterMetric.Hash)
 }

@@ -23,7 +23,7 @@ func TestUpdateMetrics(t *testing.T) {
 
 	wg.Add(1)
 	go UpdateMetrics(interval, wg, cache)
-	//wg.Wait()
+
 	time.Sleep(time.Second * 2)
 	allocMetric, ok := cache.Get(Alloc)
 	if !ok {

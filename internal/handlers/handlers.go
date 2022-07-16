@@ -7,18 +7,15 @@ import (
 	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
 	"YP-metrics-and-alerting/internal/storage"
-	"compress/gzip"
 	"crypto/hmac"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -54,13 +51,13 @@ func (repo *Repository) UpdateMetricHandler(w http.ResponseWriter, r *http.Reque
 		metric.Value = &value
 
 	} else if metric.MType == models.CounterType {
-		value, err := strconv.ParseInt(metricValue, 10, 64)
+		delta, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			http.Error(w, "Invalid Value", http.StatusBadRequest)
+			http.Error(w, "Invalid Delta", http.StatusBadRequest)
 			return
 		}
 
-		metric.Delta = &value
+		metric.Delta = &delta
 
 	} else {
 		http.Error(w, "Unknown metric", http.StatusNotImplemented)
@@ -96,7 +93,6 @@ func (repo *Repository) GetMetricHandler(w http.ResponseWriter, r *http.Request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-
 	} else if metric.MType == models.CounterType {
 		_, err = w.Write([]byte(fmt.Sprintf("%d", *metric.Delta)))
 		if err != nil {
@@ -167,7 +163,7 @@ func (repo *Repository) UpdateMetricJSONHandler(w http.ResponseWriter, r *http.R
 	}
 
 	if repo.App.Config.StoreInterval == 0 {
-		repo.SaveMetrics()
+		go repo.SaveMetrics()
 	}
 
 	err := repo.DB.SetMetric(&metric)
@@ -188,7 +184,7 @@ func (repo *Repository) UpdateMetricsListJSONHandler(w http.ResponseWriter, r *h
 	}
 
 	if repo.App.Config.StoreInterval == 0 {
-		repo.SaveMetrics()
+		go repo.SaveMetrics()
 	}
 
 	err := repo.DB.SetMetricsList(metrics)
@@ -328,35 +324,4 @@ func (repo *Repository) PingDB(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-type gzipWriter struct {
-	http.ResponseWriter
-	Writer io.Writer
-}
-
-func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
-}
-
-func GzipHandle(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			_, err = io.WriteString(w, err.Error())
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-			return
-		}
-		defer gz.Close()
-
-		w.Header().Set("Content-Encoding", "gzip")
-		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-	})
 }

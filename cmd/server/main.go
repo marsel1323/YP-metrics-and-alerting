@@ -2,6 +2,7 @@ package main
 
 import (
 	"YP-metrics-and-alerting/internal/config"
+	"YP-metrics-and-alerting/internal/gzip"
 	"YP-metrics-and-alerting/internal/handlers"
 	"YP-metrics-and-alerting/internal/render"
 	"YP-metrics-and-alerting/internal/repository"
@@ -52,7 +53,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    app.Config.Address,
-		Handler: handlers.GzipHandle(Routes(repo)),
+		Handler: gzip.GzipHandle(Routes(repo)),
 	}
 	log.Println("Server is serving on", server.Addr)
 	log.Fatal(server.ListenAndServe())
